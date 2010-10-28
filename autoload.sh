@@ -37,9 +37,11 @@ if [ ! -x $XARGS_BIN ]; then
     exit 1
 fi
 
-$FIND_BIN $0 . -type f | \
-    $EGREP_BIN "\.php$" | \
-    $XARGS_BIN $SED_BIN -i '' '/^require_once /d'
+# Mac OS X:
+#$FIND_BIN $0 . -type f | $EGREP_BIN "\.php$" | $XARGS_BIN $SED_BIN -i '' '/^require_once/d'
+
+# *nix platforms:
+$FIND_BIN $0 . -type f | $EGREP_BIN "\.php$" | $XARGS_BIN $SED_BIN -i'' '/^require_once/d'
 
 echo "All require_once statements have been removed from the project source."
 exit 0
