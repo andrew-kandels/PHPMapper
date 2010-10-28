@@ -48,9 +48,9 @@
  * @access      public
  */
 
-require_once 'PHPStateMapper/Exception.php';
-require_once 'PHPStateMapper/Exception/BadColorValue.php';
-require_once 'PHPStateMapper/Exception/Image.php';
+require_once dirname(__FILE__) . '/PHPStateMapper/Exception.php';
+require_once dirname(__FILE__) . '/PHPStateMapper/Exception/BadColorValue.php';
+require_once dirname(__FILE__) . '/PHPStateMapper/Exception/Image.php';
 
 class PHPStateMapper
 {

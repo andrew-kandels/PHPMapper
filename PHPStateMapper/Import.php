@@ -46,8 +46,8 @@
  * @access      public
  */
 
-require_once 'PHPStateMapper/Exception.php';
-require_once 'PHPStateMapper/Exception/Import.php';
+require_once dirname(__FILE__) . '/Exception.php';
+require_once dirname(__FILE__) . '/Exception/Import.php';
 
 abstract class PHPStateMapper_Import
 {

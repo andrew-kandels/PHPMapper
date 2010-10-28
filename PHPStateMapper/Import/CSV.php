@@ -47,7 +47,7 @@
  * @access      public
  */
 
-require_once 'PHPStateMapper/Import.php';
+require_once dirname(__FILE__) . '/../Import.php';
 
 class PHPStateMapper_Import_CSV extends PHPStateMapper_Import
 {
