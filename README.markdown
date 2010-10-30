@@ -1,7 +1,7 @@
-PHPStateMapper 1.0.5
-====================
+PHPStateMapper 1.0
+==================
 
-This is the list of changes for the 1.0.5 release series.
+This is the list of changes for the 1.0 release series.
 
 PHPStateMapper 1.0.4
 --------------------
