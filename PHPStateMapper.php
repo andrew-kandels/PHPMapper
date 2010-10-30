@@ -54,22 +54,27 @@ require_once dirname(__FILE__) . '/PHPStateMapper/Exception/Image.php';
 
 class PHPStateMapper
 {
-    const DEFAULT_COLOR = 'BA6807';
+    const DEFAULT_COLOR = '155083';
+    const DEFAULT_MAP = 'us_states';
+    const MIN_THRESHOLD = 0.10;
 
-    private $_states;
+    private $_items;
     private $_color;
     private $_targetValue;
+    private $_width;
 
     /**
      * Creates a StateMapper class object.
      *
+     * @param   integer     Width in Pixels
      * @param   string      6-character hex value for color or RGB array
-     * @param   array       States with values
+     * @param   array       Items with values
      * @param   integer     Target value (see: setTargetValue() doc)
      * @return  void
      * @throws  PHPStateMapper_Exception
      */
-    public function __construct($color = false, $states = array(), $targetValue = null)
+    public function __construct($width = 500, $color = false,
+        $data = array(), $targetValue = null)
     {
         if (!extension_loaded('gd') || !function_exists('imagecreatefrompng'))
         {
@@ -78,12 +83,18 @@ class PHPStateMapper
             );;
         }
 
+        $this->_width = $width;
+        if ($this->_width > 2000 || $this->_width < 100)
+        {
+            $this->_width = 500;
+        }
+
+        $this->_loadItems();
         $this->setTargetValue($targetValue);
 
-        $this->_states = array();
-        if (!empty($states)) foreach ($states as $name => $value)
+        if (!empty($data)) foreach ($data as $name => $value)
         {
-            $this->setState($name, $value);
+            $this->setItem($name, $value);
         }
 
         if (empty($color))
@@ -108,6 +119,39 @@ class PHPStateMapper
     }
 
     /**
+     * Loads the item data from the CSV file which is used to locate the
+     * data and assign them to areas on the map.
+     *
+     * @return  void
+     */
+    private function _loadItems()
+    {
+        $this->_items = array();
+
+        $csv = dirname(__FILE__) . '/maps/' . self::DEFAULT_MAP . '.csv';
+        if (!$file = fopen($csv, 'rt'))
+        {
+            throw new PHPStateMapper_Exception("Failed to open $csv map data.");
+        }
+
+        while (!feof($file) && $line = fgetcsv($file, 1024, "\t"))
+        {
+            $this->_items[(int) $line[0]] = array(
+                'names'     => array(),
+                'series'    => array(1 => 0)
+            );
+
+            // Additional names for lookup
+            for ($i = 1; $i < count($line); $i++)
+            {
+                $this->_items[(int) $line[0]]['names'][] = strtolower($line[$i]);
+            }
+        }
+
+        fclose($file);
+    }
+
+    /**
      * Imports data from a class extending PHPStateMapper_Import.
      *
      * @param   PHPStateMapper_Import
@@ -118,7 +162,7 @@ class PHPStateMapper
     {
         while ($row = $obj->getRowData())
         {
-            $this->addState($row[0], $row[1]);
+            $this->addItem($row[0], $row[1]);
         }
 
         return $this;
@@ -143,52 +187,54 @@ class PHPStateMapper
     }
 
     /**
-     * Converts a state name into a file location for the state's clipart. If the
-     * file does not exist, it returns false.
+     * Converts a RGB representation of a color to a hexidecimal one.
      *
-     * @param   string      State name (2-digit U.S. Postal abbreviation)
-     * @return  string      File name or (boolean) false if state does not exist
+     * @param   integer     Red
+     * @param   integer     Green
+     * @param   integer     Blue
+     * @return  string      Hex
      */
-    private function _getFileFromState($name)
+    private function _convertRgbToHex($r, $g, $b)
     {
-        $file = sprintf('%s/images/%2s.png', dirname(__FILE__), strtolower($name));
+        $r = dechex($r<0?0:($r>255?255:$r));
+        $g = dechex($g<0?0:($g>255?255:$g));
+        $b = dechex($b<0?0:($b>255?255:$b));
 
-        // Does the state exist?
-        if (!file_exists($file))
-        {
-            return false;
-        }
-        else
-        {
-            return $file;
-        }
+        $color = (strlen($r) < 2?'0':'').$r;
+        $color .= (strlen($g) < 2?'0':'').$g;
+        $color .= (strlen($b) < 2?'0':'').$b;
+
+        return $color;
     }
 
     /**
      * Adds a value (or if not specified, 1) to the number of items belonging
-     * to a state.
+     * to an item.
      *
-     * @param   string      State name (2-digit U.S. Postal abbreviation)
+     * @param   string      Item name (i.e.: MN or Minnesota)
      * @param   integer     Optional number to increase the count by (default 1)
+     * @param   integer     Series, defaults to 1
      * @return  StateMapper or false, if state is invalid
      */
-    public function addState($name, $add = 1)
+    public function addItem($name, $add = 1, $series = 1)
     {
-        if (!$file = $this->_getFileFromState($name))
+        if ($id = $this->_getItemId($name))
         {
-            return false;
-        }
+            if (!isset($this->_items['series'][$series]))
+            {
+                $this->_items[$id]['series'][$series] = $add;
+            }
+            else
+            {
+                $this->_items[$id]['series'][$series] += $add;
+            }
 
-        if (!isset($this->_states[$file]))
-        {
-            $this->_states[$file] = $add;
+            return $this;
         }
         else
         {
-            $this->_states[$file] += $add;
+            return false;
         }
-
-        return $this;
     }
 
     /**
@@ -209,9 +255,10 @@ class PHPStateMapper
      * Returns the value for the state with the most values, or
      * the target/forecast if set with setTargetValue().
      *
+     * @param   integer     Series (default 1)
      * @return  integer
      */
-    private function _getMaxValue()
+    private function _getMaxValue($series = 1)
     {
         if ($this->_targetValue !== null)
         {
@@ -219,10 +266,38 @@ class PHPStateMapper
         }
         else
         {
-            $values = array_values($this->_states);
-            sort($values);
-            return array_pop($values);
+            $max = 0;
+
+            foreach ($this->_items as $id => $mp)
+            {
+                if (isset($mp['series'][$series]) && $mp['series'][$series] > $max)
+                {
+                    $max = $mp['series'][$series];
+                }
+            }
+
+            return $max;
         }
+    }
+
+    /**
+     * Looks up an item by its name key in the map's data file.
+     * Returns its ID which is used to locate it on the map.
+     *
+     * @param   string      Name (i.e.: Minnesota)
+     * @return  integer     Id
+     */
+    private function _getItemId($name)
+    {
+        foreach ($this->_items as $id => $mp)
+        {
+            if (in_array(strtolower($name), $mp['names']))
+            {
+                return $id;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -230,16 +305,37 @@ class PHPStateMapper
      *
      * @param   string      State name (2-digit U.S. Postal abbreviation)
      * @param   integer     Number of items belonging to the state
+     * @param   integer     Series (default 1)
      * @return  StateMapper or false, if state is invalid
      */
-    public function setState($name, $value)
+    public function setItem($name, $value, $series = 1)
     {
-        if (!$file = $this->_getFileFromState($name))
+        if ($id = $this->_getItemId($name))
+        {
+            $this->_items[$id]['series'][$series] = $value;
+
+            return $this;
+        }
+        else
         {
             return false;
         }
+    }
 
-        $this->_states[$file] = $value;
+    /**
+     * Returns the color setting with its intensity set to the item's
+     * value.
+     *
+     * @param   float       Percentage of intensity
+     * @return  array       (R,G,B)
+     */
+    private function _getColorAlpha($pct)
+    {
+        return array(
+            ((1 - $pct) * 255) + ($pct * $this->_color[0]),
+            ((1 - $pct) * 255) + ($pct * $this->_color[1]),
+            ((1 - $pct) * 255) + ($pct * $this->_color[2])
+        );
     }
 
     /**
@@ -249,54 +345,82 @@ class PHPStateMapper
      *
      * @param   string      File name (or null, for output)
      * @param   integer     Compression level (0-9)
+     * @param   integer     Series (default 1)
      * @return  boolean     Success?
      * @throws  PHPStateMapper_Exception
      */
-    public function draw($file = null, $compression = 0)
+    public function draw($file = null, $compression = 0, $series = 1)
     {
-        if (!$img = imagecreatefrompng($tmp = dirname(__FILE__) . '/images/united_states.png'))
+        $tmp = dirname(__FILE__) . '/maps/' . self::DEFAULT_MAP . '.png';
+        if (!$img = imagecreatefrompng($tmp))
         {
             throw new PHPStateMapper_Exception_Image("Failed to load $tmp");
         }
 
-        $width  = imagesx($img);
-        $height = imagesy($img);
+        $size   = getimagesize($tmp);
         $max    = $this->_getMaxValue();
+        $num    = count($this->_items) - 1;
 
-        foreach ($this->_states as $name => $value)
+        // Clean up our source image to remove all but actual item data
+        for ($i = 0; $i < imagecolorstotal($img); $i++)
         {
-            if ($value <= 0) continue;
-
-            if (!$subImg = imagecreatefrompng($name))
+            $raw = imagecolorsforindex($img, $i);
+            $hex = $this->_convertRgbToHex($raw['red'], $raw['green'], $raw['blue']);
+            if (($raw['red'] != $raw['green'] || $raw['green'] != $raw['blue'] ||
+                $raw['red'] > $num) && $hex != 'ffffff')
             {
-                throw new PHPStateMapper_Exception_Image("Failed to open $name");
+                imagecolorset($img, $i, 255, 255, 255);
+            }
+        }
+
+        foreach ($this->_items as $id => $mp)
+        {
+            // Get the color assigned to the item
+            $rs = $gs = $bs = $id - 1;
+            $index = imagecolorexact($img, $rs, $gs, $bs);
+
+            if (!isset($mp['series'][$series]) ||
+                ($value = $mp['series'][$series]) <= 0)
+            {
+                $pct = 0;
+            }
+            else
+            {
+                $pct = $value / $max;
             }
 
-            $index = imagecolorclosest($subImg, 236, 201, 79);
-            list($r, $g, $b) = $this->_color;
-            imagecolorset($subImg, $index, $r, $g, $b);
+            if ($pct < self::MIN_THRESHOLD)
+            {
+                $pct = self::MIN_THRESHOLD;
+            }
 
-            // Make top/left pixel the transparent color (white)
-            imagecolortransparent($subImg, imagecolorat($subImg, 0, 0));
+            list($rt, $gt, $bt) = $this->_getColorAlpha($pct);
 
-            // Color in the state most popular being darker, using an alpha
-            $pct = ceil($value / $max * 100);
-
-            // Copy smaller image over the map
-            imagecopymerge($img, $subImg, 0, 0, 0, 0, $width, $height, $pct);
+            imagecolorset($img, $index, $rt, $gt, $bt);
         }
+
+        $ratio  = $size[1] / $size[0];
+        $height = floor($this->_width * $ratio);
+        $out    = imagecreate($this->_width, $height);
+
+        imagealphablending($out, false);
+        imagesavealpha($out, false);
+        imagecopyresampled($out, $img, 0, 0, 0, 0, $this->_width, $height, $size[0], $size[1]);
 
         if (!$file)
         {
             header('Content-type: image/png');
         }
 
-        if (!imagepng($img, $file, $compression))
+        if (!imagepng($out, $file, $compression))
         {
             throw new PHPStateMapper_Exception_Image("Failed to create $file");
         }
         else
         {
+            imagedestroy($img);
+            imagedestroy($out);
+
             return true;
         }
     }
