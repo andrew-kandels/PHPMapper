@@ -1,50 +1,50 @@
-1	AL	Alabama
-2	AK	Alaska
-3	AZ	Arizona
-4	AR	Arkansas
-5	CA	California
-6	CO	Colorado
-7	CT	Connecticut
-8	DE	Delaware
-9	FL	Florida
-10	GA	Georgia
-11	HI	Hawaii
-12	ID	Idaho
-13	IL	Illinois
-14	IN	Indiana
-15	IA	Iowa
-16	KS	Kansas
-17	KY	Kentucky[10]
-18	LA	Louisiana
-19	ME	Maine
-20	MD	Maryland
-21	MA	Massachusetts
-22	MI	Michigan
-23	MN	Minnesota
-24	MS	Mississippi
-25	MO	Missouri
-26	MT	Montana
-27	NE	Nebraska
-28	NV	Nevada
-29	NH	New Hampshire
-30	NJ	New Jersey
-31	NM	New Mexico
-32	NY	New York
-33	NC	North Carolina
-34	ND	North Dakota
-35	OH	Ohio
-36	OK	Oklahoma
-37	OR	Oregon
-38	PA	Pennsylvania
-39	RI	Rhode Island
-40	SC	South Carolina
-41	SD	South Dakota
-42	TN	Tennessee
-43	TX	Texas
-44	UT	Utah
-45	VT	Vermont
-46	VA	Virginia
-47	WA	Washington
-48	WV	West Virginia
-49	WI	Wisconsin
-50	WY	Wyoming
+1	US	AL	Alabama
+2	US	AK	Alaska
+3	US	AZ	Arizona
+4	US	AR	Arkansas
+5	US	CA	California
+6	US	CO	Colorado
+7	US	CT	Connecticut
+8	US	DE	Delaware
+9	US	FL	Florida
+10	US	GA	Georgia
+11	US	HI	Hawaii
+12	US	ID	Idaho
+13	US	IL	Illinois
+14	US	IN	Indiana
+15	US	IA	Iowa
+16	US	KS	Kansas
+17	US	KY	Kentucky[10]
+18	US	LA	Louisiana
+19	US	ME	Maine
+20	US	MD	Maryland
+21	US	MA	Massachusetts
+22	US	MI	Michigan
+23	US	MN	Minnesota
+24	US	MS	Mississippi
+25	US	MO	Missouri
+26	US	MT	Montana
+27	US	NE	Nebraska
+28	US	NV	Nevada
+29	US	NH	New Hampshire
+30	US	NJ	New Jersey
+31	US	NM	New Mexico
+32	US	NY	New York
+33	US	NC	North Carolina
+34	US	ND	North Dakota
+35	US	OH	Ohio
+36	US	OK	Oklahoma
+37	US	OR	Oregon
+38	US	PA	Pennsylvania
+39	US	RI	Rhode Island
+40	US	SC	South Carolina
+41	US	SD	South Dakota
+42	US	TN	Tennessee
+43	US	TX	Texas
+44	US	UT	Utah
+45	US	VT	Vermont
+46	US	VA	Virginia
+47	US	WA	Washington
+48	US	WV	West Virginia
+49	US	WI	Wisconsin
+50	US	WY	Wyoming

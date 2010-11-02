@@ -17,10 +17,6 @@ class PHPStateMapper_Import_PDO extends PHPStateMapper_Import
     private $_pdo;
     private $_rs;
     private $_tableName;
-    private $_columnRegionIndex;
-    private $_columnCountryIndex;
-    private $_columnValueIndex;
-    private $_country;
     private $_query;
     private $_queryBoundParams;
 
@@ -40,9 +36,6 @@ class PHPStateMapper_Import_PDO extends PHPStateMapper_Import
         array $options = array())
     {
         $this->_queryBoundParams    = array();
-        $this->_columnNameIndex     = 0;
-        $this->_columnValueIndex    = 1;
-        $this->_country             = 'US';
 
         $this->_pdo = new PDO($dsn, $username, $password, $options);
         $this->_pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
@@ -50,9 +43,12 @@ class PHPStateMapper_Import_PDO extends PHPStateMapper_Import
 
     /**
      * Provide a custom SQL query to retrieve the column/value pairs used
-     * to generate the map data. By default, the first and second column
-     * represent the item and value respectively, but you can overide this
-     * with the the setNameColumn and setValueColumn methods.
+     * to generate the map data. The columns returned by the query must be
+     * in this order:
+     *
+     * 1) 2-Letter ISO country code (use NULL for default country)
+     * 2) Region name (required)
+     * 3) Value (or NULL for default, which is 1 for additive)
      *
      * @param   string      SQL query
      * @param   array       Bound parameters (if any)
@@ -76,72 +72,6 @@ class PHPStateMapper_Import_PDO extends PHPStateMapper_Import
     public function setTableName($table)
     {
         $this->_tableName = $table;
-        return $this;
-    }
-
-    /**
-     * Statically sets the 2-letter country name. By default, this
-     * is 'US'.
-     *
-     * @param   string      2-letter country code
-     * @return  PHPStateMapper_Import_CSV
-     */
-    public function setCountryCode($name)
-    {
-        if (strlen($name) != 2)
-        {
-            throw new PHPStateMapper_Exception_Import(
-                'Country name should be a valid ISO 2-letter code.'
-            );
-        }
-        $this->_country = strtoupper($name);
-
-        return $this;
-    }
-
-    /**
-     * Sets the column which should be used to load the 2-letter
-     * country name. If this isn't in the table, it can be
-     * statically set via the setCountryCode method. By default,
-     * this is set to 'US'.
-     *
-     * @param   mixed       String value (if file has headers) or
-     *                      integer offset (if not)
-     * @return  PHPStateMapper
-     * @throws  PHPStateMapper_Exception_Import
-     */
-    public function setCountryColumn($name)
-    {
-        $this->_columnCountryIndex = $name;
-        return $this;
-    }
-
-
-    /**
-     * Sets the table column name in which the region value (e.g.: state name)
-     * resides.
-     *
-     * @param   string      Table name
-     * @return  PHPStateMapper_Import_PDO
-     * @throws  PDOException
-     */
-    public function setRegionColumn($column)
-    {
-        $this->_columnRegionIndex = $column;
-        return $this;
-    }
-
-    /**
-     * Sets the table column name in which the value of the item (the raw count)
-     * resides.
-     *
-     * @param   string      Table name
-     * @return  PHPStateMapper_Import_PDO
-     * @throws  PDOException
-     */
-    public function setValueColumn($value)
-    {
-        $this->_columnValueIndex = $value;
         return $this;
     }
 
@@ -186,38 +116,14 @@ class PHPStateMapper_Import_PDO extends PHPStateMapper_Import
         }
         else if ($this->_tableName !== null)
         {
-            if ($this->_columnCountryIndex !== 0)
-            {
-                $columns[] = sprintf('%s AS countryValue', $this->_columnCountryIndex);
-            }
-            else
-            {
-                $columns[] = 'NULL AS countryValue';
-            }
+            if (!$country = $this->_getMap(PHPStateMapper::COUNTRY)) $country = 'NULL';
+            if (!$region = $this->_getMap(PHPStateMapper::REGION)) $region = 'NULL';
+            if (!$value = $this->_getMap(PHPStateMapper::VALUE)) $value = 'NULL';
 
-            if ($this->_columnRegionIndex === 0)
-            {
-                throw new PHPStateMapper_Exception_Import(
-                    'Column region index appears to be invalid. Please specify the table '
-                    . 'column for the region name with the setRegionColumn method.'
-                );
-            }
-            else
-            {
-                $columns[] = sprintf('%s AS regionValue', $this->_columnRegionIndex);
-            }
-
-            if ($this->_columnValueIndex !== 0)
-            {
-                $columns[] = sprintf('%s AS valueValue', $this->_columnValueIndex);
-            }
-            else
-            {
-                $columns[] = '1 AS valueValue';
-            }
-
-            $sql = sprintf("SELECT %s FROM %s",
-                implode(', ', $columns),
+            $sql = sprintf("SELECT %s, %s, %s FROM %s",
+                $country;
+                $region;
+                $value,
                 $this->_tableName
             );
 
@@ -254,10 +160,6 @@ class PHPStateMapper_Import_PDO extends PHPStateMapper_Import
             return false;
         }
 
-        return array(
-            !empty($row['countryValue']) ? $row['countryValue'] : $this->_country,
-            $row['regionValue'],
-            $row['valueValue']
-        );
+        return array_slice($row, 0, 3);
     }
 }

@@ -51,13 +51,27 @@ require_once dirname(__FILE__) . '/PHPStateMapper/Exception/Image.php';
 class PHPStateMapper
 {
     // Default color for the darkest point on the map
-    const DEFAULT_COLOR =   '155083';
+    const DEFAULT_COLOR     =   '155083';
     // Default map to draw and collect values for
-    const DEFAULT_MAP =     'us_states';
+    const DEFAULT_MAP       =     'us_states';
     // Default width in pixels
-    const DEFAULT_WIDTH =   500;
+    const DEFAULT_WIDTH     =   500;
     // Lightest alpha to draw. 0.1 = 10% opacity of DEFAULT_COLOR
-    const MIN_THRESHOLD =   0.10;
+    const MIN_THRESHOLD     =   0.10;
+
+    // Constants used throughout the libraries
+    const COUNTRY           = 1;        // 2-Letter ISO Country Code
+    const REGION            = 2;        // 2-Letter Region (state in the U.S.)
+    const VALUE             = 2;        // 2-Letter Region (state in the U.S.)
+    const LOCATIONID        = 3;        // Unique ID column in which to join BLOCK to
+    const LATITUDE          = 4;
+    const LONGITUDE         = 5;
+    const RANGEIPSTART      = 6;
+    const RANGEIPEND        = 7;
+
+    // Column is child of...
+    const BLOCK             = 1;        // IP range segment that points to a location
+    const LOCATION          = 2;        // Singular location (i.e.: a city)
 
     protected $_items;
     protected $_color;

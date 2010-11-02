@@ -51,11 +51,11 @@ class PHPStateMapper_GeoIP_PDO extends PHPStateMapper_GeoIP
         {
             switch ($table)
             {
-                case PHPStateMapper_GeoIP::BLOCK:
+                case PHPStateMapper::BLOCK:
                     $tableName = $this->_blockName;
                     break;
 
-                case PHPStateMapper_GeoIP::LOCATION:
+                case PHPStateMapper::LOCATION:
                     $tableName = $this->_locationName;
                     break;
 
@@ -106,11 +106,11 @@ class PHPStateMapper_GeoIP_PDO extends PHPStateMapper_GeoIP
         {
             switch ($table)
             {
-                case PHPStateMapper_GeoIP::BLOCK:
+                case PHPStateMapper::BLOCK:
                     $tableName = $this->_blockName;
                     break;
 
-                case PHPStateMapper_GeoIP::LOCATION:
+                case PHPStateMapper::LOCATION:
                     $tableName = $this->_locationName;
                     break;
 
@@ -127,7 +127,7 @@ class PHPStateMapper_GeoIP_PDO extends PHPStateMapper_GeoIP
             }
         }
 
-        if (!isset($return[PHPStateMapper_GeoIP::COLUMN_RANGEIPSTART]))
+        if (!isset($return[PHPStateMapper::COLUMN_RANGEIPSTART]))
         {
             throw new PHPStateMapper_Exception_Geo(
                 'No COLUMN_RANGEIPSTART column mapped. One must be mapped using the mapColumn '
@@ -135,7 +135,7 @@ class PHPStateMapper_GeoIP_PDO extends PHPStateMapper_GeoIP
             );
         }
 
-        if (!isset($return[PHPStateMapper_GeoIP::COLUMN_RANGEIPEND]))
+        if (!isset($return[PHPStateMapper::COLUMN_RANGEIPEND]))
         {
             throw new PHPStateMapper_Exception_Geo(
                 'No COLUMN_RANGEIPEND column mapped. One must be mapped using the mapColumn '
@@ -161,8 +161,8 @@ class PHPStateMapper_GeoIP_PDO extends PHPStateMapper_GeoIP
             implode(', ', array_values($columns)),
             $this->_locationName,
             $this->_getJoinSQL(),
-            $columns[PHPStateMapper_GeoIP::COLUMN_RANGEIPSTART],
-            $columns[PHPStateMapper_GeoIP::COLUMN_RANGEIPEND]
+            $columns[PHPStateMapper::COLUMN_RANGEIPSTART],
+            $columns[PHPStateMapper::COLUMN_RANGEIPEND]
         );
 
         $rs = $this->_pdo->prepare($sql);

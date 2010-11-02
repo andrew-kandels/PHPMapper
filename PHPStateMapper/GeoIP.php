@@ -18,20 +18,6 @@ abstract class PHPStateMapper_GeoIP
     protected $_locationName    = null;
     protected $_blockName       = null;
 
-    // Column mappings
-    const COLUMN_COUNTRY        = 1;        // 2-Letter ISO Country Code
-    const COLUMN_REGION         = 2;        // 2-Letter Region (state in the U.S.)
-    const COLUMN_CITY           = 3;        // City name
-    const COLUMN_LOCATIONID     = 4;        // Unique ID column in which to join BLOCK to
-    const COLUMN_LATITUDE       = 5;
-    const COLUMN_LONGITUDE      = 6;
-    const COLUMN_RANGEIPSTART   = 7;
-    const COLUMN_RANGEIPEND     = 8;
-
-    // Column is child of...
-    const BLOCK                 = 1;        // IP range segment that points to a location
-    const LOCATION              = 2;        // Singular location (i.e.: a city)
-
     /**
      * Set the name of the location source, which depending on which
      * class is extending this class, may be a table name, file name,
@@ -97,7 +83,7 @@ abstract class PHPStateMapper_GeoIP
             );
         }
 
-        if (empty($this->_map[PHPStateMapper_GeoIP::LOCATION]))
+        if (empty($this->_map[PHPStateMapper::LOCATION]))
         {
             throw new PHPStateMapper_Exception_Geo(
                 'No columns have been mapped for the location table. See the '

@@ -15,6 +15,8 @@ require_once dirname(__FILE__) . '/../Import.php';
 
 class PHPStateMapper_Import_CSV extends PHPStateMapper_Import
 {
+    private $_map           = array();
+
     private $_file;
     private $_lineNumber;
     private $_length;
@@ -22,10 +24,6 @@ class PHPStateMapper_Import_CSV extends PHPStateMapper_Import
     private $_enclosure;
     private $_escape;
     private $_headers;
-    private $_regionColumnIndex;
-    private $_valueColumnIndex;
-    private $_countryColumnIndex;
-    private $_country;
 
     /**
      * Creates a PHPStateMapper_CSV object.
@@ -85,77 +83,6 @@ class PHPStateMapper_Import_CSV extends PHPStateMapper_Import
     }
 
     /**
-     * Statically sets the 2-letter country name. By default, this
-     * is 'US'.
-     *
-     * @param   string      2-letter country code
-     * @return  PHPStateMapper_Import_CSV
-     */
-    public function setCountryCode($name)
-    {
-        if (strlen($name) != 2)
-        {
-            throw new PHPStateMapper_Exception_Import(
-                'Country name should be a valid ISO 2-letter code.'
-            );
-        }
-        $this->_country = strtoupper($name);
-
-        return $this;
-    }
-
-    /**
-     * Sets the column which should be used to load the 2-letter
-     * country name. If this isn't in the file, it can be
-     * statically set via the setCountryCode method. By default,
-     * this is set to 'US'.
-     *
-     * @param   mixed       String value (if file has headers) or
-     *                      integer offset (if not)
-     * @return  PHPStateMapper
-     * @throws  PHPStateMapper_Exception_Import
-     */
-    public function setCountryColumn($name)
-    {
-        $this->_countryColumnIndex = $this->_getColumn($name);
-
-        return $this;
-    }
-
-    /**
-     * Sets the column which should be used to load the region
-     * portion. In the U.S., this would be the state name.
-     *
-     * @param   mixed       String value (if file has headers) or
-     *                      integer offset (if not)
-     * @return  PHPStateMapper
-     * @throws  PHPStateMapper_Exception_Import
-     */
-    public function setRegionColumn($name)
-    {
-        $this->_regionColumnIndex = $this->_getColumn($name);
-
-        return $this;
-    }
-
-    /**
-     * Sets the column which should be used to load the value
-     * portion. If not provided, each line adds 1 to a running
-     * count.
-     *
-     * @param   mixed       String value (if file has headers) or
-     *                      integer offset (if not)
-     * @return  PHPStateMapper
-     * @throws  PHPStateMapper_Exception_Import
-     */
-    public function setValueColumn($name)
-    {
-        $this->_valueColumnIndex = $this->_getColumn($name);
-
-        return $this;
-    }
-
-    /**
      * Get the row column offset based on a name or index value by
      * comparing and validating it against the header (first line).
      *
@@ -182,7 +109,7 @@ class PHPStateMapper_Import_CSV extends PHPStateMapper_Import
         }
         else
         {
-            $index = (integer)$name;
+            $index = (integer) $name;
             if ($index < 0 || $index > $this->_headers)
             {
                 throw new PHPStateMapper_Exception_Import(
@@ -233,10 +160,10 @@ class PHPStateMapper_Import_CSV extends PHPStateMapper_Import
     }
 
     /**
-     * Returns a 3-item array for the data on a given line. The first item
-     * is the 2-letter country code. The second is the region (in the U.S.
-     * this would be the state) and the third is the value for that
-     * region (if not provided, it's additive, one per match).
+     * Returns a 3-item array for the data on a given line:
+     * 1) 2-Letter Country Code
+     * 2) Region
+     * 3) Value (if not provided, then the number 1)
      *
      * @return  array
      */
@@ -253,68 +180,19 @@ class PHPStateMapper_Import_CSV extends PHPStateMapper_Import
             return false;
         }
 
-        if ($this->_regionColumnIndex === null)
-        {
-            throw new PHPStateMapper_Exception_Import(
-                'No index has been assigned for the region column. Call '
-                . 'setRegionColumn() first.'
-            );
-        }
-
         // EOF
         if (!$line = $this->_getRow())
         {
             return false;
         }
 
-        if (!isset($line[$this->_regionColumnIndex]))
-        {
-            throw new PHPStateMapper_Exception_Import(
-                'Invalid region column index ' . $this->_regionColumnIndex . ' for line '
-                . $this->_lineNumber . '.'
-            );
-        }
-        else
-        {
-            $region = $line[$this->_regionColumnIndex];
-        }
-
-        if ($this->_valueColumnIndex !== null)
-            if (!isset($line[$this->_valueColumnIndex]))
-            {
-                throw new PHPStateMapper_Exception_Import(
-                    'Invalid value column index ' . $this->_valueColumnIndex . ' for line '
-                    . $this->_lineNumber . '.'
-                );
-            }
-
-            $value = $line[$this->_valueColumnIndex];
-        }
-        else
-        {
-            $value = 1;
-        }
-
-        if ($this->_countryColumnIndex !== null)
-            if (!isset($line[$this->_countryColumnIndex]))
-            {
-                throw new PHPStateMapper_Exception_Import(
-                    'Invalid country column index ' . $this->_countryColumnIndex . ' for line '
-                    . $this->_lineNumber . '.'
-                );
-            }
-
-            $country = $line[$this->_countryColumnIndex];
-        }
-        else
-        {
-            $country = $this->_country;
-        }
+        // Extra debugging info
+        $extra = sprintf('on line number %d', $this->_lineNumber);
 
         return array(
-            $country,
-            $region,
-            $value
+            $this->_getMapValueFromArray(PHPStateMapper::COUNTRY, $line, $extra);
+            $this->_getMapValueFromArray(PHPStateMapper::REGION, $line, $extra);
+            $this->_getMapValueFromArray(PHPStateMapper::VALUE, $line, $extra)
         );
     }
 }
