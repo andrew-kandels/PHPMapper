@@ -17,8 +17,10 @@ class PHPStateMapper_Import_PDO extends PHPStateMapper_Import
     private $_pdo;
     private $_rs;
     private $_tableName;
-    private $_columnNameIndex;
+    private $_columnRegionIndex;
+    private $_columnCountryIndex;
     private $_columnValueIndex;
+    private $_country;
     private $_query;
     private $_queryBoundParams;
 
@@ -37,9 +39,10 @@ class PHPStateMapper_Import_PDO extends PHPStateMapper_Import
     public function __construct($dsn, $username = '', $password = '',
         array $options = array())
     {
-        $this->_queryBoundParams = array();
-        $this->_columnNameIndex = 0;
-        $this->_columnValueIndex = 1;
+        $this->_queryBoundParams    = array();
+        $this->_columnNameIndex     = 0;
+        $this->_columnValueIndex    = 1;
+        $this->_country             = 'US';
 
         $this->_pdo = new PDO($dsn, $username, $password, $options);
         $this->_pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
@@ -77,16 +80,54 @@ class PHPStateMapper_Import_PDO extends PHPStateMapper_Import
     }
 
     /**
-     * Sets the table column name in which the item value (e.g.: state name)
+     * Statically sets the 2-letter country name. By default, this
+     * is 'US'.
+     *
+     * @param   string      2-letter country code
+     * @return  PHPStateMapper_Import_CSV
+     */
+    public function setCountryCode($name)
+    {
+        if (strlen($name) != 2)
+        {
+            throw new PHPStateMapper_Exception_Import(
+                'Country name should be a valid ISO 2-letter code.'
+            );
+        }
+        $this->_country = strtoupper($name);
+
+        return $this;
+    }
+
+    /**
+     * Sets the column which should be used to load the 2-letter
+     * country name. If this isn't in the table, it can be
+     * statically set via the setCountryCode method. By default,
+     * this is set to 'US'.
+     *
+     * @param   mixed       String value (if file has headers) or
+     *                      integer offset (if not)
+     * @return  PHPStateMapper
+     * @throws  PHPStateMapper_Exception_Import
+     */
+    public function setCountryColumn($name)
+    {
+        $this->_columnCountryIndex = $name;
+        return $this;
+    }
+
+
+    /**
+     * Sets the table column name in which the region value (e.g.: state name)
      * resides.
      *
      * @param   string      Table name
      * @return  PHPStateMapper_Import_PDO
      * @throws  PDOException
      */
-    public function setNameColumn($column)
+    public function setRegionColumn($column)
     {
-        $this->_columnNameIndex = $column;
+        $this->_columnRegionIndex = $column;
         return $this;
     }
 
@@ -145,30 +186,40 @@ class PHPStateMapper_Import_PDO extends PHPStateMapper_Import
         }
         else if ($this->_tableName !== null)
         {
-            if ($this->_columnNameIndex === 0)
+            if ($this->_columnCountryIndex !== 0)
             {
-                throw new PHPStateMapper_Exception_Import(
-                    'Column name index appears to be invalid. Please specify the table '
-                    . 'column for the region name with the setNameColumn method.'
-                );
+                $columns[] = sprintf('%s AS countryValue', $this->_columnCountryIndex);
+            }
+            else
+            {
+                $columns[] = 'NULL AS countryValue';
             }
 
-            if ($this->_columnValueIndex === 0)
+            if ($this->_columnRegionIndex === 0)
             {
                 throw new PHPStateMapper_Exception_Import(
-                    'Column value index appears to be invalid. Please specify the table '
-                    . 'column for the region value with the setValueColumn method.'
+                    'Column region index appears to be invalid. Please specify the table '
+                    . 'column for the region name with the setRegionColumn method.'
                 );
             }
+            else
+            {
+                $columns[] = sprintf('%s AS regionValue', $this->_columnRegionIndex);
+            }
 
-            $sql = sprintf("SELECT %s AS colName, %s AS colValue FROM %s",
-                $this->_columnNameIndex,
-                $this->_columnValueIndex,
+            if ($this->_columnValueIndex !== 0)
+            {
+                $columns[] = sprintf('%s AS valueValue', $this->_columnValueIndex);
+            }
+            else
+            {
+                $columns[] = '1 AS valueValue';
+            }
+
+            $sql = sprintf("SELECT %s FROM %s",
+                implode(', ', $columns),
                 $this->_tableName
             );
-
-            $this->_columnNameIndex  = 'colName';
-            $this->_columnValueIndex = 'colValue';
 
             $rs = $this->_pdo->query($sql);
         }
@@ -203,23 +254,10 @@ class PHPStateMapper_Import_PDO extends PHPStateMapper_Import
             return false;
         }
 
-        if (!isset($row[$this->_columnNameIndex]))
-        {
-            throw new PHPStateMapper_Exception_Import("Name column {$this->_columnNameIndex} "
-                . 'does not exist in the resultset. Call setNameColumn method with the correct name.'
-            );
-        }
-
-        if (!isset($row[$this->_columnValueIndex]))
-        {
-            throw new PHPStateMapper_Exception_Import("Value column {$this->_columnValueIndex} "
-                . 'does not exist in the resultset. Call setValueColumn method with correct name.'
-            );
-        }
-
         return array(
-            $row[$this->_columnNameIndex],
-            $row[$this->_columnValueIndex]
+            !empty($row['countryValue']) ? $row['countryValue'] : $this->_country,
+            $row['regionValue'],
+            $row['valueValue']
         );
     }
 }

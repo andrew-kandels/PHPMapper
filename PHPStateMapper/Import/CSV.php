@@ -22,8 +22,10 @@ class PHPStateMapper_Import_CSV extends PHPStateMapper_Import
     private $_enclosure;
     private $_escape;
     private $_headers;
-    private $_nameColumnIndex;
+    private $_regionColumnIndex;
     private $_valueColumnIndex;
+    private $_countryColumnIndex;
+    private $_country;
 
     /**
      * Creates a PHPStateMapper_CSV object.
@@ -78,30 +80,68 @@ class PHPStateMapper_Import_CSV extends PHPStateMapper_Import
             );
         }
 
-        $this->_lineNumber = 1;
+        $this->_lineNumber  = 1;
+        $this->_country     = 'US';
     }
 
     /**
-     * Sets the column which should be used to load the name
-     * portion. This would be the assigned the value from the
-     * value column.
+     * Statically sets the 2-letter country name. By default, this
+     * is 'US'.
+     *
+     * @param   string      2-letter country code
+     * @return  PHPStateMapper_Import_CSV
+     */
+    public function setCountryCode($name)
+    {
+        if (strlen($name) != 2)
+        {
+            throw new PHPStateMapper_Exception_Import(
+                'Country name should be a valid ISO 2-letter code.'
+            );
+        }
+        $this->_country = strtoupper($name);
+
+        return $this;
+    }
+
+    /**
+     * Sets the column which should be used to load the 2-letter
+     * country name. If this isn't in the file, it can be
+     * statically set via the setCountryCode method. By default,
+     * this is set to 'US'.
      *
      * @param   mixed       String value (if file has headers) or
      *                      integer offset (if not)
      * @return  PHPStateMapper
      * @throws  PHPStateMapper_Exception_Import
      */
-    public function setNameColumn($name)
+    public function setCountryColumn($name)
     {
-        $this->_nameColumnIndex = $this->_getColumn($name);
+        $this->_countryColumnIndex = $this->_getColumn($name);
+
+        return $this;
+    }
+
+    /**
+     * Sets the column which should be used to load the region
+     * portion. In the U.S., this would be the state name.
+     *
+     * @param   mixed       String value (if file has headers) or
+     *                      integer offset (if not)
+     * @return  PHPStateMapper
+     * @throws  PHPStateMapper_Exception_Import
+     */
+    public function setRegionColumn($name)
+    {
+        $this->_regionColumnIndex = $this->_getColumn($name);
 
         return $this;
     }
 
     /**
      * Sets the column which should be used to load the value
-     * portion. This would be the assigned to the state in the
-     * name column.
+     * portion. If not provided, each line adds 1 to a running
+     * count.
      *
      * @param   mixed       String value (if file has headers) or
      *                      integer offset (if not)
@@ -193,9 +233,10 @@ class PHPStateMapper_Import_CSV extends PHPStateMapper_Import
     }
 
     /**
-     * Returns a 2-item array for the data on a given line. The first item
-     * is the state name and the second item is the value assigned to the
-     * state.
+     * Returns a 3-item array for the data on a given line. The first item
+     * is the 2-letter country code. The second is the region (in the U.S.
+     * this would be the state) and the third is the value for that
+     * region (if not provided, it's additive, one per match).
      *
      * @return  array
      */
@@ -212,19 +253,11 @@ class PHPStateMapper_Import_CSV extends PHPStateMapper_Import
             return false;
         }
 
-        if ($this->_nameColumnIndex === null)
+        if ($this->_regionColumnIndex === null)
         {
             throw new PHPStateMapper_Exception_Import(
-                'No index has been assigned for the name column. Call '
-                . 'setNameColumn() first.'
-            );
-        }
-
-        if ($this->_valueColumnIndex === null)
-        {
-            throw new PHPStateMapper_Exception_Import(
-                'No index has been assigned for the value column. Call '
-                . 'setValueColumn() first.'
+                'No index has been assigned for the region column. Call '
+                . 'setRegionColumn() first.'
             );
         }
 
@@ -234,25 +267,54 @@ class PHPStateMapper_Import_CSV extends PHPStateMapper_Import
             return false;
         }
 
-        if (!isset($line[$this->_nameColumnIndex]))
+        if (!isset($line[$this->_regionColumnIndex]))
         {
             throw new PHPStateMapper_Exception_Import(
-                'Invalid name column index ' . $this->_nameColumnIndex . ' for line '
+                'Invalid region column index ' . $this->_regionColumnIndex . ' for line '
                 . $this->_lineNumber . '.'
             );
         }
-
-        if (!isset($line[$this->_valueColumnIndex]))
+        else
         {
-            throw new PHPStateMapper_Exception_Import(
-                'Invalid value column index ' . $this->_valueColumnIndex . ' for line '
-                . $this->_lineNumber . '.'
-            );
+            $region = $line[$this->_regionColumnIndex];
+        }
+
+        if ($this->_valueColumnIndex !== null)
+            if (!isset($line[$this->_valueColumnIndex]))
+            {
+                throw new PHPStateMapper_Exception_Import(
+                    'Invalid value column index ' . $this->_valueColumnIndex . ' for line '
+                    . $this->_lineNumber . '.'
+                );
+            }
+
+            $value = $line[$this->_valueColumnIndex];
+        }
+        else
+        {
+            $value = 1;
+        }
+
+        if ($this->_countryColumnIndex !== null)
+            if (!isset($line[$this->_countryColumnIndex]))
+            {
+                throw new PHPStateMapper_Exception_Import(
+                    'Invalid country column index ' . $this->_countryColumnIndex . ' for line '
+                    . $this->_lineNumber . '.'
+                );
+            }
+
+            $country = $line[$this->_countryColumnIndex];
+        }
+        else
+        {
+            $country = $this->_country;
         }
 
         return array(
-            $line[$this->_nameColumnIndex],
-            (integer) $line[$this->_valueColumnIndex]
+            $country,
+            $region,
+            $value
         );
     }
 }
