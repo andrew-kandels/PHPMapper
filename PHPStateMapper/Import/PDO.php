@@ -160,6 +160,15 @@ class PHPStateMapper_Import_PDO extends PHPStateMapper_Import
             return false;
         }
 
-        return array_slice($row, 0, 3);
+        // All queries map first 3 values of array
+        $this->map(PHPStateMapper::COUNTRY, 0);
+        $this->map(PHPStateMapper::REGION, 1);
+        $this->map(PHPStateMapper::VALUE, 2);
+
+        return array(
+            $this->_getMapValueFromArray(PHPStateMapper::COUNTRY, $row),
+            $this->_getMapValueFromArray(PHPStateMapper::REGION, $row),
+            $this->_getMapValueFromArray(PHPStateMapper::VALUE, $row)
+        );
     }
 }
