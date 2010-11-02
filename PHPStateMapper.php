@@ -47,39 +47,33 @@
 require_once dirname(__FILE__) . '/PHPStateMapper/Exception.php';
 require_once dirname(__FILE__) . '/PHPStateMapper/Exception/BadColorValue.php';
 require_once dirname(__FILE__) . '/PHPStateMapper/Exception/Image.php';
+require_once dirname(__FILE__) . '/PHPStateMapper/Map/Image.php';
+require_once dirname(__FILE__) . '/PHPStateMapper/Map/CSV.php';
 
 class PHPStateMapper
 {
-    // Default color for the darkest point on the map
-    const DEFAULT_COLOR     =   '155083';
-    // Default map to draw and collect values for
-    const DEFAULT_MAP       =     'us_states';
-    // Default width in pixels
-    const DEFAULT_WIDTH     =   500;
-    // Lightest alpha to draw. 0.1 = 10% opacity of DEFAULT_COLOR
-    const MIN_THRESHOLD     =   0.10;
+    const MIN_THRESHOLD     = 0.10;     // Lightest alpha to draw. 0.1 = 10% opacity
+    const DEFAULT_COUNTRY   = 'US';
 
     // Constants used throughout the libraries
     const COUNTRY           = 1;        // 2-Letter ISO Country Code
     const REGION            = 2;        // 2-Letter Region (state in the U.S.)
-    const VALUE             = 2;        // 2-Letter Region (state in the U.S.)
-    const LOCATIONID        = 3;        // Unique ID column in which to join BLOCK to
-    const LATITUDE          = 4;
-    const LONGITUDE         = 5;
-    const RANGEIPSTART      = 6;
-    const RANGEIPEND        = 7;
+    const VALUE             = 3;        // 2-Letter Region (state in the U.S.)
+    const LOCATIONID        = 4;        // Unique ID column in which to join BLOCK to
+    const LATITUDE          = 5;
+    const LONGITUDE         = 6;
+    const RANGEIPSTART      = 7;
+    const RANGEIPEND        = 8;
 
     // Column is child of...
     const BLOCK             = 1;        // IP range segment that points to a location
     const LOCATION          = 2;        // Singular location (i.e.: a city)
 
-    protected $_items;
-    protected $_color;
-    protected $_targetValue;
-    protected $_width;
-    protected $_maxWidth;
-    protected $_maxHeight;
-    protected $_base;
+    protected $_regions     = array();
+    protected $_color       = '155083'; // Default color
+    protected $_targetValue = null;
+    protected $_width       = 500;
+    protected $_base        = null;
 
     /**
      * Creates a StateMapper class object.
@@ -91,60 +85,42 @@ class PHPStateMapper
      */
     public function __construct($map = 'us_states', $base = null)
     {
-        if (!extension_loaded('gd') || !function_exists('imagecreatefrompng'))
+        if ($base === null)
         {
-            throw new PHPStateMapper_Exception(
-                'The PHP GD extension is required to run PHPStateMapper.'
-            );;
+            $this->_base = dirname(__FILE__) . '/maps';
+        }
+        else
+        {
+            $this->_base = $base;
         }
 
-        $this->_base = $base;
+        $this->_base = preg_replace('/\/+$/', '', $this->_base) . '/' . $map . '.';
 
-        $this->setMap($map)
-             ->setColor(self::DEFAULT_COLOR)
-             ->setWidth(self::DEFAULT_WIDTH)
-             ->_loadItems();
+        $this->_loadRegions();
     }
 
     /**
-     * Sets the map to draw. It should have a data file (.csv),
-     * and an image (.png) in the ./maps/ directory.
+     * Loads the available regions from the map data source and zeroes
+     * out the values for each region.
      *
-     * @param   string      Map base file name (no extension)
-     * @return  PHPStateMapper
-     * @throws  PHPStateMapper_Exception
+     * @return  void
      */
-    public function setMap($map)
+    private function _loadRegions()
     {
-        if ($this->_base === null)
+        $csv = new PHPStateMapper_Map_CSV($this->_base . 'csv');
+        while ($region = $csv->getRegion())
         {
-            $this->_base = dirname(__FILE__) . '/';
-        }
+            foreach ($region[2] as $index => $name)
+            {
+                $region[2][$index] = strtolower(trim($name));
+            }
 
-        if (!preg_match('/\/$/', $this->_base))
-        {
-            $this->_base .= '/';
-        }
-
-        $base = $this->_base . "maps";
-
-        if (!file_exists($this->_image = "$base/$map.png"))
-        {
-            throw new PHPStateMapper_Exception(
-                "Map image file $map not found at {$this->_image}."
+            $this->_regions[$region[0]] = array(
+                'country'   => $region[1],
+                'names'     => $region[2],
+                'series'    => array(1 => 0)
             );
         }
-
-        if (!file_exists($this->_data = "$base/$map.csv"))
-        {
-            throw new PHPStateMapper_Exception(
-                "No map csv data file $map found in $base."
-            );
-        }
-
-        list($this->_maxWidth, $this->_maxHeight) = getimagesize($this->_image);
-
-        return $this;
     }
 
     /**
@@ -157,7 +133,7 @@ class PHPStateMapper
      */
     public function setColor($color)
     {
-        $this->_color = $this->_getRgbColorFromInput($color);
+        $this->_color = $color;
 
         return $this;
     }
@@ -189,77 +165,6 @@ class PHPStateMapper
     }
 
     /**
-     * Loads the item data from the CSV file which is used to locate the
-     * data and assign them to areas on the map.
-     *
-     * @return  void
-     */
-    protected function _loadItems()
-    {
-        $this->_items = array();
-
-        if (!$file = fopen($this->_data, 'rt'))
-        {
-            throw new PHPStateMapper_Exception("Failed to open {$this->_data} map data.");
-        }
-
-        while (!feof($file) && $line = fgetcsv($file, 1024, "\t"))
-        {
-            $this->_items[(int) $line[0]] = array(
-                'names'     => array(),
-                'series'    => array(1 => 0)
-            );
-
-            // Additional names for lookup
-            for ($i = 1; $i < count($line); $i++)
-            {
-                $this->_items[(int) $line[0]]['names'][] = strtolower($line[$i]);
-            }
-        }
-
-        fclose($file);
-    }
-
-    /**
-     * Converts a hexidecimal representation of a color (think: XHTML/CSS) into
-     * an RGB 3-item array.
-     *
-     * @param   string      Hexidecimal color representation
-     * @return  array       (R,G,B)
-     */
-    protected function _convertHexToRgb($hex)
-    {
-        list($r, $g, $b) = array(
-            $hex[0] . $hex[1],
-            $hex[2] . $hex[3],
-            $hex[4] . $hex[5]
-        );
-
-        return array(hexdec($r), hexdec($g), hexdec($b));
-    }
-
-    /**
-     * Converts a RGB representation of a color to a hexidecimal one.
-     *
-     * @param   integer     Red
-     * @param   integer     Green
-     * @param   integer     Blue
-     * @return  string      Hex
-     */
-    protected function _convertRgbToHex($r, $g, $b)
-    {
-        $r = dechex($r<0?0:($r>255?255:$r));
-        $g = dechex($g<0?0:($g>255?255:$g));
-        $b = dechex($b<0?0:($b>255?255:$b));
-
-        $color = (strlen($r) < 2?'0':'').$r;
-        $color .= (strlen($g) < 2?'0':'').$g;
-        $color .= (strlen($b) < 2?'0':'').$b;
-
-        return $color;
-    }
-
-    /**
      * Imports data from a class extending PHPStateMapper_Import.
      *
      * @param   PHPStateMapper_Import
@@ -270,32 +175,54 @@ class PHPStateMapper
     {
         while ($row = $obj->getRowData())
         {
-            $this->addItem($row[0], $row[1]);
+            $series = isset($row[3]) ? (int) $row[3] : 1;
+            $this->add($row[0], $row[1], $row[2], $series);
         }
 
         return $this;
     }
 
     /**
-     * Adds a value (or if not specified, 1) to the number of items belonging
-     * to an item.
+     * Adds to a region's score.
      *
-     * @param   string      Item name (i.e.: MN or Minnesota)
-     * @param   integer     Optional number to increase the count by (default 1)
-     * @param   integer     Series, defaults to 1
+     * @param   string      2-letter ISO country code
+     * @param   string      Region name
      * @return  PHPStateMapper
      */
-    public function addItem($name, $add = 1, $series = 1)
+    public function lookup($country, $region)
     {
-        if ($id = $this->_getItemId($name))
+        foreach ($this->_regions as $id => $mp)
         {
-            if (!isset($this->_items['series'][$series]))
+            if (!strcasecmp($mp['country'], $country) &&
+                in_array(strtolower($region), $mp['names']))
             {
-                $this->_items[$id]['series'][$series] = $add;
+                return $id;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Adds to a region's score.
+     *
+     * @param   string      2-letter ISO country code
+     * @param   string      Region name
+     * @param   integer     Value to add
+     * @param   integer     Series (optional) or defaults to 1
+     * @return  PHPStateMapper
+     */
+    public function add($country, $region, $value, $series = 1)
+    {
+        if ($id = $this->lookup($country, $region))
+        {
+            if (!isset($this->_regions[$id]['series'][$series]))
+            {
+                $this->_regions[$id]['series'][$series] = $value;
             }
             else
             {
-                $this->_items[$id]['series'][$series] += $add;
+                $this->_regions[$id]['series'][$series] += $value;
             }
         }
 
@@ -303,18 +230,19 @@ class PHPStateMapper
     }
 
     /**
-     * Sets the number of items belonging to a state.
+     * Sets a region's score.
      *
-     * @param   string      State name (2-digit U.S. Postal abbreviation)
-     * @param   integer     Number of items belonging to the state
-     * @param   integer     Series (default 1)
+     * @param   string      2-letter ISO country code
+     * @param   string      Region name
+     * @param   integer     Value to set
+     * @param   integer     Series (optional) or defaults to 1
      * @return  PHPStateMapper
      */
-    public function setItem($name, $value, $series = 1)
+    public function set($country, $region, $value, $series = 1)
     {
-        if ($id = $this->_getItemId($name))
+        if ($id = $this->lookup($country, $region))
         {
-            $this->_items[$id]['series'][$series] = $value;
+            $this->_regions[$id]['series'][$series] = $value;
         }
 
         return $this;
@@ -353,7 +281,7 @@ class PHPStateMapper
         {
             $max = 0;
 
-            foreach ($this->_items as $id => $mp)
+            foreach ($this->_regions as $id => $mp)
             {
                 if (isset($mp['series'][$series]) && $mp['series'][$series] > $max)
                 {
@@ -366,197 +294,38 @@ class PHPStateMapper
     }
 
     /**
-     * Looks up an item by its name key in the map's data file.
-     * Returns its ID which is used to locate it on the map.
+     * Outputs a PNG image reflecting the values provided to add/set.
      *
-     * @param   string      Name (i.e.: Minnesota)
-     * @return  integer     Id
-     */
-    protected function _getItemId($name)
-    {
-        foreach ($this->_items as $id => $mp)
-        {
-            if (in_array(strtolower($name), $mp['names']))
-            {
-                return $id;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Returns the color setting with its intensity set to the item's
-     * value.
-     *
-     * @param   float       Percentage of intensity
-     * @param   array       RGB color or empty for setColor value
-     * @return  array       (R,G,B)
-     */
-    protected function _getColorAlpha($pct, $color = null)
-    {
-        if ($pct > 1) $pct = 1;
-        if ($color === null) $color = $this->_color;
-        return array(
-            ((1 - $pct) * 255) + ($pct * $color[0]),
-            ((1 - $pct) * 255) + ($pct * $color[1]),
-            ((1 - $pct) * 255) + ($pct * $color[2])
-        );
-    }
-
-    /**
-     * Returns the gd image object after removing all invalid colors.
-     *
-     * @return  object
-     * @throws PHPStateMapper_Exception_Image
-     */
-    protected function _getCleanImage()
-    {
-        if (!$img = imagecreatefrompng($this->_image))
-        {
-            throw new PHPStateMapper_Exception_Image("Failed to load {$this->_image}.");
-        }
-
-        $num = count($this->_items);
-
-        // Clean up our source image to remove all but actual item data
-        for ($i = 0; $i < imagecolorstotal($img); $i++)
-        {
-            $raw = imagecolorsforindex($img, $i);
-            $hex = $this->_convertRgbToHex($raw['red'], $raw['green'], $raw['blue']);
-            if (($raw['red'] != $raw['green'] || $raw['green'] != $raw['blue'] ||
-                $raw['red'] > $num) && $hex != 'ffffff')
-            {
-                imagecolorset($img, $i, 255, 255, 255);
-            }
-        }
-
-        return $img;
-    }
-
-    /**
-     * Resizes the source image to the width provided by setWidth() or
-     * DEFAULT_WIDTH while maintaining aspect ratio of the height.
-     *
-     * @param   object      Raw GD image object
-     * @return  object      Resized GD image object
-     */
-    protected function _getResizedImage($img)
-    {
-        // Resize the image while maintaining ratio
-        $ratio  = $this->_maxHeight / $this->_maxWidth;
-        $height = floor($this->_width * $ratio);
-        $out    = imagecreate($this->_width, $height);
-
-        imagealphablending($out, false);
-        imagesavealpha($out, false);
-        imagecopyresampled($out, $img, 0, 0, 0, 0, $this->_width, $height,
-            $this->_maxWidth, $this->_maxHeight
-        );
-        imagedestroy($img);
-
-        return $out;
-    }
-
-    /**
-     * Outputs a GD image object either to the browser or to a file.
-     *
-     * @param   object      GD image object
-     * @param   string      File name or null for standard out
-     * @return  void
-     * @throws  PHPStateMapper_Exception_Image
-     */
-    protected function _outputImage($img, $file = null, $compression = 4)
-    {
-        if (!$file)
-        {
-            header('Content-type: image/png');
-        }
-
-        if (!imagepng($img, $file, $compression))
-        {
-            throw new PHPStateMapper_Exception_Image("Failed to create $file");
-        }
-        else
-        {
-            imagedestroy($img);
-        }
-
-        if (!$file)
-        {
-            die();
-        }
-    }
-
-    /**
-     * Takes the input value of a color in either RGB or as a hex string
-     * and converts it to an RGB array.
-     *
-     * @param   mixed       RGB color or hex string
-     * @return  array       RGB
-     * @throws  PHPStateMapper_Exception_BadColorValue
-     */
-    protected function _getRgbColorFromInput($color)
-    {
-        if (is_array($color))
-        {
-            if (count($color) != 3)
-            {
-                throw new PHPStateMapper_Exception_BadColorValue();
-            }
-            else
-            {
-                $color = $color;
-            }
-        }
-        else
-        {
-            $color = $this->_convertHexToRgb($color);
-        }
-
-        return $color;
-    }
-
-    /**
-     * Similar to imagepng(). If no file is given, it prints headers and
-     * draws the image directly to the browser. If a file is given, it instead
-     * fills it with the contents of the image.
-     *
-     * @param   string      File name (or null, for output)
-     * @param   integer     Compression level (0-9)
-     * @param   integer     Series (default 1)
+     * @param   string      File name, or none to write to the browser
+     * @param   integer     Compression level (1-10)
+     * @param   integer     Series to draw (1 is default)
      * @return  PHPStateMapper
-     * @throws  PHPStateMapper_Exception
      */
     public function draw($file = null, $compression = 4, $series = 1)
     {
-        $max    = $this->_getMaxValue();
-        $img    = $this->_getCleanImage();
+        $image = new PHPStateMapper_Map_Image($this->_base . 'png', count($this->_regions));
+        $max = $this->_getMaxValue($series);
 
-        // Shade in each item
-        foreach ($this->_items as $id => $mp)
+        foreach ($this->_regions as $id => $mp)
         {
-            // Get the color assigned to the item
-            $rs = $gs = $bs = $id;
-            $index = imagecolorexact($img, $rs, $gs, $bs);
+            $value = isset($mp['series'][$series])
+                ? $mp['series'][$series]
+                : 0;
+            if ($max > 0)
+            {
+                $pct = $value / $max;
+            }
+            else
+            {
+                $pct = self::MIN_THRESHOLD;
+            }
 
-            // Get the alpha shading percentage
-            $pct = !isset($mp['series'][$series]) || ($value = $mp['series'][$series]) <= 0
-                ? 0
-                : $value / $max;
-
-            // Pull up to the minimum to avoid white-out
-            if ($pct < self::MIN_THRESHOLD) $pct = self::MIN_THRESHOLD;
-
-            // Get the color after applying the alpha
-            list($rt, $gt, $bt) = $this->_getColorAlpha($pct);
-
-            // Add the color to the fixed pallette
-            imagecolorset($img, $index, $rt, $gt, $bt);
+            $image->setRegion($id, $this->_color, $pct);
         }
 
-        // Draw or write the image to disk
-        $this->_outputImage($this->_getResizedImage($img), $file, $compression);
+        $image
+            ->resize($this->_width)
+            ->draw($file, $compression);
 
         return $this;
     }

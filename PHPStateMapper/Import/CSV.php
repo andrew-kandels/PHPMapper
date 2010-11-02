@@ -15,8 +15,6 @@ require_once dirname(__FILE__) . '/../Import.php';
 
 class PHPStateMapper_Import_CSV extends PHPStateMapper_Import
 {
-    private $_map           = array();
-
     private $_file;
     private $_lineNumber;
     private $_length;
@@ -160,6 +158,30 @@ class PHPStateMapper_Import_CSV extends PHPStateMapper_Import
     }
 
     /**
+     * Maps a column in the data source to a known value such
+     * as country or region.
+     *
+     * @param   integer     Type constant (PHPStateMapper::COUNTRY, etc.)
+     * @param   mixed       Value
+     * @throws  PHPStateMapper_Exception_Import
+     */
+    public function map($id, $name)
+    {
+        if ($this->_hasHeaders && is_string($name))
+        {
+            foreach ($this->_headers as $index => $hdr)
+            {
+                if (!strcasecmp($name, $hdr))
+                {
+                    return parent::map($id, $index);
+                }
+            }
+        }
+
+        return parent::map($id, $name);
+    }
+
+    /**
      * Returns a 3-item array for the data on a given line:
      * 1) 2-Letter Country Code
      * 2) Region
@@ -190,8 +212,8 @@ class PHPStateMapper_Import_CSV extends PHPStateMapper_Import
         $extra = sprintf('on line number %d', $this->_lineNumber);
 
         return array(
-            $this->_getMapValueFromArray(PHPStateMapper::COUNTRY, $line, $extra);
-            $this->_getMapValueFromArray(PHPStateMapper::REGION, $line, $extra);
+            $this->_getMapValueFromArray(PHPStateMapper::COUNTRY, $line, $extra),
+            $this->_getMapValueFromArray(PHPStateMapper::REGION, $line, $extra),
             $this->_getMapValueFromArray(PHPStateMapper::VALUE, $line, $extra)
         );
     }

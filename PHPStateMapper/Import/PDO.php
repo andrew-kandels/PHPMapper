@@ -121,8 +121,8 @@ class PHPStateMapper_Import_PDO extends PHPStateMapper_Import
             if (!$value = $this->_getMap(PHPStateMapper::VALUE)) $value = 'NULL';
 
             $sql = sprintf("SELECT %s, %s, %s FROM %s",
-                $country;
-                $region;
+                $country,
+                $region,
                 $value,
                 $this->_tableName
             );

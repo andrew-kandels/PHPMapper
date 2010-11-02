@@ -14,7 +14,6 @@ require_once dirname(__FILE__) . '/Exception/Import.php';
 
 abstract class PHPStateMapper_Import
 {
-    const DEFAULT_COUNTRY       = 'US';
     protected $_map             = array();
 
     /**
@@ -44,7 +43,7 @@ abstract class PHPStateMapper_Import
         switch ($id)
         {
             case PHPStateMapper::COUNTRY:
-                if (strlen($id) != 2)
+                if (strlen($name) != 2)
                 {
                     throw new PHPStateMapper_Exception_Import(
                         'Country code should be a valid 2-letter ISO value (e.g.: US).'
@@ -69,7 +68,7 @@ abstract class PHPStateMapper_Import
         switch ($id)
         {
             case PHPStateMapper::COUNTRY:
-                return self::DEFAULT_COUNTRY;
+                return PHPStateMapper::DEFAULT_COUNTRY;
 
             case PHPStateMapper::VALUE:
                 return 1; // additive
@@ -117,10 +116,9 @@ abstract class PHPStateMapper_Import
      */
     protected function _getMapValueFromArray($id, array $arr, $extra = '')
     {
-        $index = $this->_getMap($id);
-        if ($index)
+        if (false !== ($index = $this->_getMap($id)))
         {
-            if (!isset($arr[$countryIndex]))
+            if (!isset($arr[$index]))
             {
                 throw new PHPStateMapper_Exception_Import(
                     sprintf('Column index specified as %s not found%s.',
@@ -130,22 +128,18 @@ abstract class PHPStateMapper_Import
                 );
             }
 
-            $value = trim($arr[$countryIndex]);
+            $value = trim($arr[$index]);
         }
         else
         {
-            $value = $this->_getDefaultMap($id);
+            $value = $this->_getMapDefault($id);
         }
 
         if (empty($value)) switch ($id)
         {
             case PHPStateMapper::REGION:
-                throw new PHPStateMapper_Exception_Import(
-                    sprintf('REGION column is mapped but no value was found in the data '
-                    . 'source%s.',
-                        !empty($extra) ? ' ' . $extra : ''
-                    )
-                );
+                $value = 0;
+                break;
         }
 
         return $value;
