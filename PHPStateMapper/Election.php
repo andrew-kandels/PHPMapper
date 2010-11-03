@@ -13,26 +13,16 @@
  * @author      Andrew Kandels <me@andrewkandels.com>
  */
 
-require_once dirname(__FILE__) . '/../PHPStateMapper.php';
-
 class PHPStateMapper_Election extends PHPStateMapper
 {
-    // Too close to call if: If top 2 winners are within this
-    const DEFAULT_TCTC_THRESHOLD = 1;
-    // Too close to call if: The winning value is less than this
-    const DEFAULT_TCTC_MIN_VALUE = 1;
-    // Default too close to call color
-    const DEFAULT_TCTC_COLOR = '666666';
-    // Shading (see setShading() method)
-    const DEFAULT_SHADING = false;
     // Default no-value color
     const DEFAULT_NO_VALUE_COLOR = 'c0c0c0';
 
-    private $_parties;
-    private $_tctcColor;
-    private $_tctcThreshold;
-    private $_tctcMinValue;
-    private $_hasShading;
+    private $_parties           = array();
+    private $_tctcColor         = '666666';
+    private $_tctcThreshold     = 1;
+    private $_tctcMinValue      = 1;
+    private $_hasShading        = false;
 
     /**
      * Creates a StateMapper class object.
@@ -45,12 +35,7 @@ class PHPStateMapper_Election extends PHPStateMapper
     public function __construct($map = 'us_states', $base = null)
     {
         parent::__construct($map, $base);
-
-        $this->setTooCloseToCallThreshold(self::DEFAULT_TCTC_THRESHOLD)
-             ->setTooCloseToCallMinValue(self::DEFAULT_TCTC_MIN_VALUE)
-             ->setTooCloseToCallColor(self::DEFAULT_TCTC_COLOR)
-             ->setShading(self::DEFAULT_SHADING)
-             ->setColor(self::DEFAULT_NO_VALUE_COLOR);
+        $this->setColor(self::DEFAULT_NO_VALUE_COLOR);
     }
 
     /**
@@ -64,7 +49,6 @@ class PHPStateMapper_Election extends PHPStateMapper
     public function setShading($value)
     {
         $this->_hasShading = (boolean) $value;
-
         return $this;
     }
 
@@ -79,7 +63,6 @@ class PHPStateMapper_Election extends PHPStateMapper
     public function setTooCloseToCallThreshold($value)
     {
         $this->_tctcThreshold = $value;
-
         return $this;
     }
 
@@ -94,7 +77,6 @@ class PHPStateMapper_Election extends PHPStateMapper
     public function setTooCloseToCallMinValue($value)
     {
         $this->_tctcMinValue = $value;
-
         return $this;
     }
 
@@ -108,8 +90,7 @@ class PHPStateMapper_Election extends PHPStateMapper
      */
     public function setTooCloseToCallColor($color)
     {
-        $this->_tctcColor = $this->_getRgbColorFromInput($color);
-
+        $this->_tctcColor = $color;
         return $this;
     }
 
@@ -133,7 +114,7 @@ class PHPStateMapper_Election extends PHPStateMapper
 
         $this->_parties[count($this->_parties) + 1] = array(
             'name'  => $name,
-            'color' => $this->_getRgbColorFromInput($color)
+            'color' => $color
         );
 
         return $this;
@@ -196,23 +177,6 @@ class PHPStateMapper_Election extends PHPStateMapper
     }
 
     /**
-     * Imports data from a class extending PHPStateMapper_Import.
-     *
-     * @param   PHPStateMapper_Import
-     * @return  PHPStateMapper
-     * @throws  PHPStateMapper_Exception_Import
-     */
-    public function import($obj)
-    {
-        while ($row = $obj->getRowData())
-        {
-            $this->addItem($row[0], $row[1]);
-        }
-
-        return $this;
-    }
-
-    /**
      * Adds a value (or if not specified, 1) to the number of items belonging
      * to an item.
      *
@@ -221,7 +185,7 @@ class PHPStateMapper_Election extends PHPStateMapper
      * @param   integer     Optional number to increase the count by (default 1)
      * @return  PHPStateMapper
      */
-    public function addItem($party, $name, $add = 1)
+    public function add($party, $name, $add = 1)
     {
         if (!$partyId = $this->_getPartyId($party))
         {
@@ -230,7 +194,7 @@ class PHPStateMapper_Election extends PHPStateMapper
             );
         }
 
-        parent::addItem($name, $add, $partyId);
+        parent::add('US', $name, $add, $partyId);
 
         return $this;
     }
@@ -244,7 +208,7 @@ class PHPStateMapper_Election extends PHPStateMapper
      * @param   integer     Series (default 1)
      * @return  PHPStateMapper
      */
-    public function setItem($name, $value, $series = 1)
+    public function set($name, $value, $series = 1)
     {
         if (!$partyId = $this->_getPartyId($party))
         {
@@ -253,7 +217,7 @@ class PHPStateMapper_Election extends PHPStateMapper
             );
         }
 
-        parent::setItem($name, $value, $partyId);
+        parent::set('US', $name, $value, $partyId);
 
         return $this;
     }
@@ -270,11 +234,9 @@ class PHPStateMapper_Election extends PHPStateMapper
      */
     public function draw($file = null, $compression = 4)
     {
-        $max = $this->_getMaxValue();
-        $img = $this->_getCleanImage();
+        $image = new PHPStateMapper_Map_Image($this->_base . 'png', count($this->_regions));
 
-        // Shade in each item
-        foreach ($this->_items as $id => $mp)
+        foreach ($this->_regions as $id => $mp)
         {
             $series     = $mp['series'];
             arsort($series);
@@ -308,27 +270,26 @@ class PHPStateMapper_Election extends PHPStateMapper
                 $color = $this->_parties[$names[0]]['color'];
             }
 
-            // Get the color assigned to the item
-            $rs = $gs = $bs = $id;
-            $index = imagecolorexact($img, $rs, $gs, $bs);
+            $max = $values[0] + $values[1];
 
             // Get the alpha shading percentage
-            $pct = $hasShading && $num >= 2
-                ? (1 - $values[1] / ($values[0] + $values[1]))
-                : 1;
+            if ($max > 0)
+            {
+                $pct = $hasShading && $num >= 2
+                    ? (1 - $values[1] / ($values[0] + $values[1]))
+                    : 1;
+            }
+            else
+            {
+                $pct = PHPStateMapper::MIN_THRESHOLD;
+            }
 
-            // Pull up to the minimum to avoid white-out
-            if ($pct < self::MIN_THRESHOLD) $pct = self::MIN_THRESHOLD;
-
-            // Get the color after applying the alpha
-            list($rt, $gt, $bt) = $this->_getColorAlpha($pct, $color);
-
-            // Add the color to the fixed pallette
-            imagecolorset($img, $index, $rt, $gt, $bt);
+            $image->setRegion($id, $color, $pct);
         }
 
-        // Draw or write the image to disk
-        $this->_outputImage($this->_getResizedImage($img), $file, $compression);
+        $image
+            ->resize($this->_width)
+            ->draw($file, $compression);
 
         return $this;
     }

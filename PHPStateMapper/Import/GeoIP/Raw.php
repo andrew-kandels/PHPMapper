@@ -11,18 +11,17 @@
  * @access      public
  */
 
-require_once dirname(__FILE__) . '/../../Import.php';
-
 class PHPStateMapper_Import_GeoIP_Raw extends PHPStateMapper_Import
 {
+    private $_geoip;
     private $_file;
     private $_lines;
     private $_maxLineLength;
 
-    public function __construct($maxLineLength = 1024)
+    public function __construct(PHPStateMapper_Import_GeoIP $geoip, $maxLineLength = 1024)
     {
-        parent::__construct();
         $this->_maxLineLength = $maxLineLength;
+        $this->_geoip = $geoip;
     }
 
     /**
@@ -77,7 +76,10 @@ class PHPStateMapper_Import_GeoIP_Raw extends PHPStateMapper_Import
                     return false;
                 }
 
-                $line = trim(fgets($this->_file, $this->_maxLineLength));
+                if (!$line = fgets($this->_file, $this->_maxLineLength))
+                {
+                    return false;
+                }
             }
             else
             {
@@ -93,16 +95,10 @@ class PHPStateMapper_Import_GeoIP_Raw extends PHPStateMapper_Import
                 . '(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]'
                 . '|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b/', $line, $matches))
             {
-                if ($row = $this->_geo->lookup($ip) &&
-                    isset($row[PHPStateMapper_GeoIP::COLUMN_COUNTRY]))
+                $ip = trim($matches[0]);
+                if ($row = $this->_geoip->lookup($ip))
                 {
-                    return array(
-                        $row[PHPStateMapper_GeoIP::COLUMN_COUNTRY],
-                        isset($row[PHPStateMapper_GeoIP::COLUMN_REGION])
-                            ? $row[PHPStateMapper_GeoIP::COLUMN_REGION]
-                            : null,
-                        1
-                    );
+                    return array($row[0], $row[1], 1);
                 }
             }
         }

@@ -120,6 +120,18 @@ class PHPStateMapper_Map_Image
      */
     public function resize($width)
     {
+        // Validation
+        if ($width > $this->_maxWidth)
+        {
+            $width = $this->_maxWidth;
+        }
+        else if ($width < PHPStateMapper::MIN_WIDTH)
+        {
+            throw new PHPStateMapper_Exception(
+                'Image width should be at least ' . PHPStateMapper::MIN_WIDTH . ' pixels wide.'
+            );
+        }
+
         // Resize the image while maintaining ratio
         $ratio  = $this->_maxHeight / $this->_maxWidth;
         $height = floor($width * $ratio);

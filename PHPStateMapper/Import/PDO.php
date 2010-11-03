@@ -10,8 +10,6 @@
  * @author      Andrew Kandels <me@andrewkandels.com>
  */
 
-require_once dirname(__FILE__) . '/../Import.php';
-
 class PHPStateMapper_Import_PDO extends PHPStateMapper_Import
 {
     private $_pdo;
@@ -116,9 +114,17 @@ class PHPStateMapper_Import_PDO extends PHPStateMapper_Import
         }
         else if ($this->_tableName !== null)
         {
-            if (!$country = $this->_getMap(PHPStateMapper::COUNTRY)) $country = 'NULL';
-            if (!$region = $this->_getMap(PHPStateMapper::REGION)) $region = 'NULL';
-            if (!$value = $this->_getMap(PHPStateMapper::VALUE)) $value = 'NULL';
+            if (!$country = $this->_getMap(PHPStateMapper::COUNTRY))
+            {
+                $country = '"' . preg_replace('/[^A-Z]/', '', PHPStateMapper::DEFAULT_COUNTRY) . '"';
+            }
+
+            $region = $this->_getMap(PHPStateMapper::REGION);
+
+            if (!$value = $this->_getMap(PHPStateMapper::VALUE))
+            {
+                $value = 1;
+            }
 
             $sql = sprintf("SELECT %s, %s, %s FROM %s",
                 $country,
@@ -155,7 +161,7 @@ class PHPStateMapper_Import_PDO extends PHPStateMapper_Import
             $this->_rs = $this->_getQuery();
         }
 
-        if (!$row = $this->_rs->fetch(PDO::FETCH_BOTH))
+        if (!$row = $this->_rs->fetch(PDO::FETCH_NUM))
         {
             return false;
         }

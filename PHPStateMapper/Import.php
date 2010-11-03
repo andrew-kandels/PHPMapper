@@ -9,9 +9,6 @@
  * @author      Andrew Kandels <me@andrewkandels.com>
  */
 
-require_once dirname(__FILE__) . '/Exception.php';
-require_once dirname(__FILE__) . '/Exception/Import.php';
-
 abstract class PHPStateMapper_Import
 {
     protected $_map             = array();
@@ -40,20 +37,7 @@ abstract class PHPStateMapper_Import
      */
     public function map($id, $name)
     {
-        switch ($id)
-        {
-            case PHPStateMapper::COUNTRY:
-                if (strlen($name) != 2)
-                {
-                    throw new PHPStateMapper_Exception_Import(
-                        'Country code should be a valid 2-letter ISO value (e.g.: US).'
-                    );
-                }
-                break;
-        }
-
         $this->_map[$id] = $name;
-
         return $this;
     }
 
@@ -139,6 +123,18 @@ abstract class PHPStateMapper_Import
         {
             case PHPStateMapper::REGION:
                 $value = 0;
+                break;
+        }
+
+        switch ($id)
+        {
+            case PHPStateMapper::COUNTRY:
+                if (strlen($value) != 2)
+                {
+                    throw new PHPStateMapper_Exception_Import(
+                        'Country code should be a valid 2-letter ISO value (e.g.: US).'
+                    );
+                }
                 break;
         }
 

@@ -44,16 +44,27 @@
  * @access      public
  */
 
-require_once dirname(__FILE__) . '/PHPStateMapper/Exception.php';
-require_once dirname(__FILE__) . '/PHPStateMapper/Exception/BadColorValue.php';
-require_once dirname(__FILE__) . '/PHPStateMapper/Exception/Image.php';
-require_once dirname(__FILE__) . '/PHPStateMapper/Map/Image.php';
-require_once dirname(__FILE__) . '/PHPStateMapper/Map/CSV.php';
+$base = dirname(__FILE__);
+
+require_once "$base/PHPStateMapper/Exception.php";
+require_once "$base/PHPStateMapper/Exception/Geo.php";
+require_once "$base/PHPStateMapper/Exception/Image.php";
+require_once "$base/PHPStateMapper/Exception/Import.php";
+require_once "$base/PHPStateMapper/Exception/BadColorValue.php";
+require_once "$base/PHPStateMapper/Election.php";
+require_once "$base/PHPStateMapper/Map/CSV.php";
+require_once "$base/PHPStateMapper/Map/Image.php";
+require_once "$base/PHPStateMapper/Import.php";
+require_once "$base/PHPStateMapper/Import/CSV.php";
+require_once "$base/PHPStateMapper/Import/PDO.php";
+require_once "$base/PHPStateMapper/Import/GeoIP.php";
+require_once "$base/PHPStateMapper/Import/GeoIP/Raw.php";
 
 class PHPStateMapper
 {
     const MIN_THRESHOLD     = 0.10;     // Lightest alpha to draw. 0.1 = 10% opacity
-    const DEFAULT_COUNTRY   = 'US';
+    const DEFAULT_COUNTRY   = 'US';     // Default 2-letter ISO code
+    const MIN_WIDTH         = 50;       // Minimum pixel width
 
     // Constants used throughout the libraries
     const COUNTRY           = 1;        // 2-Letter ISO Country Code
@@ -72,7 +83,7 @@ class PHPStateMapper
     protected $_regions     = array();
     protected $_color       = '155083'; // Default color
     protected $_targetValue = null;
-    protected $_width       = 500;
+    protected $_width       = 1000;
     protected $_base        = null;
 
     /**
@@ -134,7 +145,6 @@ class PHPStateMapper
     public function setColor($color)
     {
         $this->_color = $color;
-
         return $this;
     }
 
@@ -148,19 +158,7 @@ class PHPStateMapper
      */
     public function setWidth($width)
     {
-        if ($width > $this->_maxWidth)
-        {
-            $this->_width = $this->_maxWidth;
-        }
-        else if ($width < 100)
-        {
-            $this->_width = 100;
-        }
-        else
-        {
-            $this->_width = $width;
-        }
-
+        $this->_width = $width;
         return $this;
     }
 
