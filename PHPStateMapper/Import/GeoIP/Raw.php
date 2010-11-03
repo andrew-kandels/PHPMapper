@@ -6,6 +6,9 @@
  * IPv4 address and decode it to its physical location on a map
  * and then import that data to PHPStateMapper.
  *
+ * Requires the PHP geoip PECL extension. See doc/geoip.html for
+ * instructions on installation.
+ *
  * @package     PHPStateMapper
  * @author      Andrew Kandels <me@andrewkandels.com>
  * @access      public
@@ -13,15 +16,22 @@
 
 class PHPStateMapper_Import_GeoIP_Raw extends PHPStateMapper_Import
 {
-    private $_geoip;
     private $_file;
     private $_lines;
     private $_maxLineLength;
 
-    public function __construct(PHPStateMapper_Import_GeoIP $geoip, $maxLineLength = 1024)
+    public function __construct($maxLineLength = 1024)
     {
+        if (!function_exists('geoip_record_by_name'))
+        {
+            throw new PHPStateMapper_Exception_Import(
+                'PECL geoip extension is required by PHPStateMapper GeoIP '
+                . 'functionality. See ' . realpath(dirname(__FILE__) . '../../../doc')
+                . '/geoip.html for installation instructions.'
+            );
+        }
+
         $this->_maxLineLength = $maxLineLength;
-        $this->_geoip = $geoip;
     }
 
     /**
@@ -95,10 +105,14 @@ class PHPStateMapper_Import_GeoIP_Raw extends PHPStateMapper_Import
                 . '(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]'
                 . '|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b/', $line, $matches))
             {
-                $ip = trim($matches[0]);
-                if ($row = $this->_geoip->lookup($ip))
+                $row = @geoip_record_by_name(trim($matches[0]));
+                if ($row && !empty($row['country_code']))
                 {
-                    return array($row[0], $row[1], 1);
+                    return array(
+                        $row['country_code'],
+                        !empty($row['region']) ? $row['region'] : null,
+                        1
+                    );
                 }
             }
         }

@@ -57,7 +57,6 @@ require_once "$base/PHPStateMapper/Map/Image.php";
 require_once "$base/PHPStateMapper/Import.php";
 require_once "$base/PHPStateMapper/Import/CSV.php";
 require_once "$base/PHPStateMapper/Import/PDO.php";
-require_once "$base/PHPStateMapper/Import/GeoIP.php";
 require_once "$base/PHPStateMapper/Import/GeoIP/Raw.php";
 
 class PHPStateMapper
@@ -277,8 +276,6 @@ class PHPStateMapper
         }
         else
         {
-            $max = 0;
-
             foreach ($this->_regions as $id => $mp)
             {
                 if (isset($mp['series'][$series]) && $mp['series'][$series] > $max)
@@ -311,7 +308,10 @@ class PHPStateMapper
                 : 0;
             if ($max > 0)
             {
-                $pct = $value / $max;
+                if (($pct = $value / $max) > 1)
+                {
+                    $pct = 1;
+                }
             }
             else
             {
