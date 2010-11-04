@@ -32,7 +32,7 @@ class PHPStateMapper_Election extends PHPStateMapper
      * @return  void
      * @throws  PHPStateMapper_Exception
      */
-    public function __construct($map = 'us_states', $base = null)
+    public function __construct($map = 'us', $base = null)
     {
         parent::__construct($map, $base);
         $this->setColor(self::DEFAULT_NO_VALUE_COLOR);
@@ -234,9 +234,9 @@ class PHPStateMapper_Election extends PHPStateMapper
      */
     public function draw($file = null, $compression = 4)
     {
-        $image = new PHPStateMapper_Map_Image($this->_base . 'png', count($this->_regions));
+        $this->_image->setNumAreas(count($this->_areas));
 
-        foreach ($this->_regions as $id => $mp)
+        foreach ($this->_areas as $id => $mp)
         {
             $series     = $mp['series'];
             arsort($series);
@@ -284,10 +284,10 @@ class PHPStateMapper_Election extends PHPStateMapper
                 $pct = PHPStateMapper::MIN_THRESHOLD;
             }
 
-            $image->setRegion($id, $color, $pct);
+            $this->_image->setShading($id, $color, $pct);
         }
 
-        $image
+        $this->_image
             ->resize($this->_width)
             ->draw($file, $compression);
 
