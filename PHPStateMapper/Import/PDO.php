@@ -116,10 +116,13 @@ class PHPStateMapper_Import_PDO extends PHPStateMapper_Import
         {
             if (!$country = $this->_getMap(PHPStateMapper::COUNTRY))
             {
-                $country = '"' . preg_replace('/[^A-Z]/', '', PHPStateMapper::DEFAULT_COUNTRY) . '"';
+                $country = '""';
             }
 
-            $region = $this->_getMap(PHPStateMapper::REGION);
+            if (!$region = $this->_getMap(PHPStateMapper::REGION))
+            {
+                $region = '""';
+            }
 
             if (!$value = $this->_getMap(PHPStateMapper::VALUE))
             {

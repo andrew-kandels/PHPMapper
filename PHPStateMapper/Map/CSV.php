@@ -32,11 +32,12 @@ class PHPStateMapper_Map_CSV
     }
 
     /**
-     * Iteratively returns the next region found in the CSV data source file.
-     * Each region is returned as an array formatted as such:
+     * Iteratively returns the next shadable area found in the
+     * CSV data source file. Each area is returned as an array
+     * formatted as such:
      *
      * Array(
-     *     numerical region id #,
+     *     numerical area id #,
      *     2-letter ISO country code (e.g.: 'US'),
      *     array('List', 'Of', 'Region', 'Names')
      * ))
@@ -44,7 +45,7 @@ class PHPStateMapper_Map_CSV
      * @return  array
      * @throws  PHPStateMapper_Exception
      */
-    public function getRegion()
+    public function get()
     {
         if ($this->_data === null)
         {
@@ -65,18 +66,20 @@ class PHPStateMapper_Map_CSV
 
         $this->_lineNumber++;
 
-        if (count($line) < 3)
+        if (count($line) < 2)
         {
             throw new PHPStateMapper_Exception(
                 "Line number {$this->_lineNumber} of map data file does not contain "
-                . "enough columns. Expecting at least 3 (id, country, region)."
+                . "enough columns. Expecting at least 2 (id, country)."
             );
         }
 
         return array(
             $line[0],
             $line[1],
-            array_slice($line, 2)
+            isset($line[2])
+                ? array_slice($line, 2)
+                : null
         );
     }
 

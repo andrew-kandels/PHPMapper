@@ -79,11 +79,12 @@ class PHPStateMapper
     const BLOCK             = 1;        // IP range segment that points to a location
     const LOCATION          = 2;        // Singular location (i.e.: a city)
 
-    protected $_regions     = array();
+    protected $_areas       = array();
     protected $_color       = '155083'; // Default color
     protected $_targetValue = null;
     protected $_width       = 1000;
     protected $_base        = null;
+    protected $_image       = null;
 
     /**
      * Creates a StateMapper class object.
@@ -93,7 +94,7 @@ class PHPStateMapper
      * @return  void
      * @throws  PHPStateMapper_Exception
      */
-    public function __construct($map = 'us_states', $base = null)
+    public function __construct($map = 'world', $base = null)
     {
         if ($base === null)
         {
@@ -104,30 +105,31 @@ class PHPStateMapper
             $this->_base = $base;
         }
 
-        $this->_base = preg_replace('/\/+$/', '', $this->_base) . '/' . $map . '.';
+        $this->_base    = preg_replace('/\/+$/', '', $this->_base) . '/' . $map . '.';
+        $this->_image   = new PHPStateMapper_Map_Image($this->_base . 'png');
 
-        $this->_loadRegions();
+        $this->_loadAreas();
     }
 
     /**
-     * Loads the available regions from the map data source and zeroes
-     * out the values for each region.
+     * Loads the available areas from the map data source and zeroes
+     * out the values for each area.
      *
      * @return  void
      */
-    private function _loadRegions()
+    private function _loadAreas()
     {
         $csv = new PHPStateMapper_Map_CSV($this->_base . 'csv');
-        while ($region = $csv->getRegion())
+        while ($area = $csv->get())
         {
-            foreach ($region[2] as $index => $name)
+            if ($area[2] !== null) foreach ($area[2] as $index => $name)
             {
-                $region[2][$index] = strtolower(trim($name));
+                $area[2][$index] = strtolower(trim($name));
             }
 
-            $this->_regions[$region[0]] = array(
-                'country'   => $region[1],
-                'names'     => $region[2],
+            $this->_areas[$area[0]] = array(
+                'country'   => $area[1],
+                'names'     => $area[2],
                 'series'    => array(1 => 0)
             );
         }
@@ -180,20 +182,29 @@ class PHPStateMapper
     }
 
     /**
-     * Adds to a region's score.
+     * Retrieves the ID for a country/region combination.
      *
      * @param   string      2-letter ISO country code
      * @param   string      Region name
      * @return  PHPStateMapper
      */
-    public function lookup($country, $region)
+    public function lookup($country, $region = null)
     {
-        foreach ($this->_regions as $id => $mp)
+        foreach ($this->_areas as $id => $mp)
         {
-            if (!strcasecmp($mp['country'], $country) &&
-                in_array(strtolower($region), $mp['names']))
+            if (!strcasecmp($mp['country'], $country))
             {
-                return $id;
+                // No regions, country match only
+                if ($mp['names'] === null)
+                {
+                    return $id;
+                }
+
+                // Has regions, must be a region match
+                if (in_array(strtolower($region), $mp['names']))
+                {
+                    return $id;
+                }
             }
         }
 
@@ -209,17 +220,17 @@ class PHPStateMapper
      * @param   integer     Series (optional) or defaults to 1
      * @return  PHPStateMapper
      */
-    public function add($country, $region, $value, $series = 1)
+    public function add($country, $region = null, $value = 1, $series = 1)
     {
         if ($id = $this->lookup($country, $region))
         {
-            if (!isset($this->_regions[$id]['series'][$series]))
+            if (!isset($this->_areas[$id]['series'][$series]))
             {
-                $this->_regions[$id]['series'][$series] = $value;
+                $this->_areas[$id]['series'][$series] = $value;
             }
             else
             {
-                $this->_regions[$id]['series'][$series] += $value;
+                $this->_areas[$id]['series'][$series] += $value;
             }
         }
 
@@ -235,11 +246,11 @@ class PHPStateMapper
      * @param   integer     Series (optional) or defaults to 1
      * @return  PHPStateMapper
      */
-    public function set($country, $region, $value, $series = 1)
+    public function set($country, $region = null, $value = 1, $series = 1)
     {
         if ($id = $this->lookup($country, $region))
         {
-            $this->_regions[$id]['series'][$series] = $value;
+            $this->_areas[$id]['series'][$series] = $value;
         }
 
         return $this;
@@ -276,7 +287,9 @@ class PHPStateMapper
         }
         else
         {
-            foreach ($this->_regions as $id => $mp)
+            $max = 0;
+
+            foreach ($this->_areas as $id => $mp)
             {
                 if (isset($mp['series'][$series]) && $mp['series'][$series] > $max)
                 {
@@ -298,10 +311,10 @@ class PHPStateMapper
      */
     public function draw($file = null, $compression = 4, $series = 1)
     {
-        $image = new PHPStateMapper_Map_Image($this->_base . 'png', count($this->_regions));
+        $this->_image->setNumAreas(count($this->_areas));
         $max = $this->_getMaxValue($series);
 
-        foreach ($this->_regions as $id => $mp)
+        foreach ($this->_areas as $id => $mp)
         {
             $value = isset($mp['series'][$series])
                 ? $mp['series'][$series]
@@ -318,10 +331,10 @@ class PHPStateMapper
                 $pct = self::MIN_THRESHOLD;
             }
 
-            $image->setRegion($id, $this->_color, $pct);
+            $this->_image->setShading($id, $this->_color, $pct);
         }
 
-        $image
+        $this->_image
             ->resize($this->_width)
             ->draw($file, $compression);
 

@@ -70,27 +70,13 @@ abstract class PHPStateMapper_Import
      */
     protected function _getMap($id)
     {
-        $exists = isset($this->_map[$id]);
-        $value = $exists ? $this->_map[$id] : false;
-
-        if (!$exists) switch ($id)
-        {
-            case PHPStateMapper::REGION:
-                throw new PHPStateMapper_Exception_Import(
-                    'Region must be mapped by calling the map method with the '
-                    . 'PHPStateMapper::REGION constant.'
-                );
-        }
-
-        return $value;
+        return (isset($this->_map[$id]) ? $this->_map[$id] : false);
     }
 
     /**
      * Attempts to find a value by its mapping in an array. If found,
      * it returns the trimmed result. If not, it returns the default
-     * value or false if there is no default value. Validation for
-     * required fields like REGION is also done and exceptions thrown
-     * if no data is provided.
+     * value or false if there is no default value.
      *
      * @param   integer     Type constant (PHPStateMapper::COUNTRY, etc.)
      * @param   array       Data array
@@ -114,16 +100,11 @@ abstract class PHPStateMapper_Import
 
             $value = trim($arr[$index]);
         }
-        else
+
+        // Not set or empty, use default value
+        if (empty($value))
         {
             $value = $this->_getMapDefault($id);
-        }
-
-        if (empty($value)) switch ($id)
-        {
-            case PHPStateMapper::REGION:
-                $value = 0;
-                break;
         }
 
         switch ($id)
@@ -132,7 +113,8 @@ abstract class PHPStateMapper_Import
                 if (strlen($value) != 2)
                 {
                     throw new PHPStateMapper_Exception_Import(
-                        'Country code should be a valid 2-letter ISO value (e.g.: US).'
+                        'Country code should be a valid 2-letter ISO value (e.g.: US). '
+                        . 'Found "' . $value . '"' . $extra
                     );
                 }
                 break;

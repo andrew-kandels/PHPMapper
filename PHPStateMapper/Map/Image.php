@@ -2,7 +2,7 @@
 /**
  * PHPStateMapper_Map_Image
  *
- * Model for loading the map image, shading in regions, and outputting
+ * Model for loading the map image, shading in areas, and outputting
  * the result.
  *
  * @package     PHPStateMapper
@@ -20,11 +20,10 @@ class PHPStateMapper_Map_Image
      * Creates a PHPStateMapper_Map class object.
      *
      * @param   string      Image file
-     * @param   integer     Number of map regions
      * @return  void
      * @throws  PHPStateMapper_Exception
      */
-    public function __construct($file, $numRegions)
+    public function __construct($file)
     {
         // GD is required for image processing
         if (!extension_loaded('gd') || !function_exists('imagecreatefrompng'))
@@ -39,19 +38,32 @@ class PHPStateMapper_Map_Image
             throw new PHPStateMapper_Exception_Image("Failed to load {$file}.");
         }
 
-        // White-out pixels that aren't valid regions
+        list($this->_maxWidth, $this->_maxHeight) = getimagesize($file);
+    }
+
+    /**
+     * Sets the number of areas on the map that can be shaded. Colors not
+     * in these areas will be whited out to clean the image from shadows
+     * and such.
+     *
+     * @param   integer     Number of shaders
+     * @return  PHPStateMapper_Map_Image
+     */
+    public function setNumAreas($num)
+    {
+        // White-out pixels that aren't valid areas
         for ($i = 0; $i < imagecolorstotal($this->_image); $i++)
         {
             $raw = imagecolorsforindex($this->_image, $i);
             $hex = $this->convertRgbToHex($raw['red'], $raw['green'], $raw['blue']);
             if (($raw['red'] != $raw['green'] || $raw['green'] != $raw['blue'] ||
-                $raw['red'] > $numRegions) && $hex != 'ffffff')
+                $raw['red'] > $num) && $hex != 'ffffff')
             {
                 imagecolorset($this->_image, $i, 255, 255, 255);
             }
         }
 
-        list($this->_maxWidth, $this->_maxHeight) = getimagesize($file);
+        return $this;
     }
 
     /**
@@ -208,18 +220,18 @@ class PHPStateMapper_Map_Image
     }
 
     /**
-     * Shades in a region of the map to the percentage (alpha) of
+     * Shades in a areas of the map to the percentage (alpha) of
      * a provided color.
      *
-     * @param   integer     Region ID # (auto-increment)
+     * @param   integer     ID on the map (1-255) to shade
      * @param   mixed       Color (RGB array or hex color)
      * @param   float       Alpha percentage (1 = fully visible, 0 = fully opaque)
      * @return  PHPStateMapper_Image
      */
-    public function setRegion($regionId, $color, $pct = 1.0)
+    public function setShading($id, $color, $pct = 1.0)
     {
         // Get the color assigned to the item
-        $r = $g = $b = $regionId;
+        $r = $g = $b = $id;
         $index = imagecolorexact($this->_image, $r, $g, $b);
 
         // Pull up to the minimum to avoid white-out
