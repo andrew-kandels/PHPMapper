@@ -1,16 +1,16 @@
 <?php
 /**
- * PHPStateMapper_Import_PDO
+ * PHPMapper_Import_PDO
  *
  * A class designed for loading raw usage-by-state data into the
- * PHPStateMapper class using a PDO compatible data source such
+ * PHPMapper class using a PDO compatible data source such
  * as MySQL.
  *
- * @package     PHPStateMapper
+ * @package     PHPMapper
  * @author      Andrew Kandels <me@andrewkandels.com>
  */
 
-class PHPStateMapper_Import_PDO extends PHPStateMapper_Import
+class PHPMapper_Import_PDO extends PHPMapper_Import
 {
     private $_pdo;
     private $_rs;
@@ -19,7 +19,7 @@ class PHPStateMapper_Import_PDO extends PHPStateMapper_Import
     private $_queryBoundParams;
 
     /**
-     * Creates a PHPStateMapper_Import_PDO object. Instantiated in the same
+     * Creates a PHPMapper_Import_PDO object. Instantiated in the same
      * way as you would a PDO object, so for documentation see:
      *
      * http://www.php.net/manual/en/pdo.construct.php
@@ -28,7 +28,7 @@ class PHPStateMapper_Import_PDO extends PHPStateMapper_Import
      * @param   string      Username (optional)
      * @param   string      Password (optional)
      * @param   array       Driver options array (see PDO documentation)
-     * @throws  PHPStateMapper_Exception_Import
+     * @throws  PHPMapper_Exception_Import
      */
     public function __construct($dsn, $username = '', $password = '',
         array $options = array())
@@ -50,7 +50,7 @@ class PHPStateMapper_Import_PDO extends PHPStateMapper_Import
      *
      * @param   string      SQL query
      * @param   array       Bound parameters (if any)
-     * @return  PHPStateMapper_Import_PDO
+     * @return  PHPMapper_Import_PDO
      * @throws  PDOException
      */
     public function setQuery($sql, $params = array())
@@ -64,7 +64,7 @@ class PHPStateMapper_Import_PDO extends PHPStateMapper_Import
      * Sets the database table name in which the column/value pairs sit.
      *
      * @param   string      Table name
-     * @return  PHPStateMapper_Import_PDO
+     * @return  PHPMapper_Import_PDO
      * @throws  PDOException
      */
     public function setTableName($table)
@@ -79,7 +79,7 @@ class PHPStateMapper_Import_PDO extends PHPStateMapper_Import
      *
      * @return  PDOStatement
      * @throws  PDOException
-     * @throws  PHPStateMapper_Exception_Import
+     * @throws  PHPMapper_Exception_Import
      */
     private function _getQuery()
     {
@@ -114,17 +114,17 @@ class PHPStateMapper_Import_PDO extends PHPStateMapper_Import
         }
         else if ($this->_tableName !== null)
         {
-            if (!$country = $this->_getMap(PHPStateMapper::COUNTRY))
+            if (!$country = $this->_getMap(PHPMapper::COUNTRY))
             {
                 $country = '""';
             }
 
-            if (!$region = $this->_getMap(PHPStateMapper::REGION))
+            if (!$region = $this->_getMap(PHPMapper::REGION))
             {
                 $region = '""';
             }
 
-            if (!$value = $this->_getMap(PHPStateMapper::VALUE))
+            if (!$value = $this->_getMap(PHPMapper::VALUE))
             {
                 $value = 1;
             }
@@ -140,9 +140,9 @@ class PHPStateMapper_Import_PDO extends PHPStateMapper_Import
         }
         else
         {
-            throw new PHPStateMapper_Exception_Import(
+            throw new PHPMapper_Exception_Import(
                 'You must provide either a table via setTableName or a query via '
-                . 'setQuery in order to collect data from the PHPStateMapper_Import_PDO '
+                . 'setQuery in order to collect data from the PHPMapper_Import_PDO '
                 . 'class.'
             );
         }
@@ -170,14 +170,14 @@ class PHPStateMapper_Import_PDO extends PHPStateMapper_Import
         }
 
         // All queries map first 3 values of array
-        $this->map(PHPStateMapper::COUNTRY, 0);
-        $this->map(PHPStateMapper::REGION, 1);
-        $this->map(PHPStateMapper::VALUE, 2);
+        $this->map(PHPMapper::COUNTRY, 0);
+        $this->map(PHPMapper::REGION, 1);
+        $this->map(PHPMapper::VALUE, 2);
 
         return array(
-            $this->_getMapValueFromArray(PHPStateMapper::COUNTRY, $row),
-            $this->_getMapValueFromArray(PHPStateMapper::REGION, $row),
-            $this->_getMapValueFromArray(PHPStateMapper::VALUE, $row)
+            $this->_getMapValueFromArray(PHPMapper::COUNTRY, $row),
+            $this->_getMapValueFromArray(PHPMapper::REGION, $row),
+            $this->_getMapValueFromArray(PHPMapper::VALUE, $row)
         );
     }
 }

@@ -1,6 +1,6 @@
 <?php
 /**
- * PHPStateMapper_Election
+ * PHPMapper_Election
  *
  * A class to generate a map for which states are shaded in one of
  * several colors by whichever has the higher of a series of values.
@@ -9,11 +9,11 @@
  * In U.S. elections, a U.S. state map would be colored red for
  * republican states, blue for democratic and grey for undecided.
  *
- * @package     PHPStateMapper
+ * @package     PHPMapper
  * @author      Andrew Kandels <me@andrewkandels.com>
  */
 
-class PHPStateMapper_Election extends PHPStateMapper
+class PHPMapper_Election extends PHPMapper
 {
     // Default no-value color
     const DEFAULT_NO_VALUE_COLOR = 'c0c0c0';
@@ -30,7 +30,7 @@ class PHPStateMapper_Election extends PHPStateMapper
      * @param   string      Map name (default is us_states)
      * @param   string      Base path (defaults to project path + /maps)
      * @return  void
-     * @throws  PHPStateMapper_Exception
+     * @throws  PHPMapper_Exception
      */
     public function __construct($map = 'us', $base = null)
     {
@@ -44,7 +44,7 @@ class PHPStateMapper_Election extends PHPStateMapper
      * an alpha. The darker the color, the bigger the win.
      *
      * @param   boolean     On/off
-     * @return  PHPStateMapper_Election
+     * @return  PHPMapper_Election
      */
     public function setShading($value)
     {
@@ -58,7 +58,7 @@ class PHPStateMapper_Election extends PHPStateMapper
      * drawn as too close to call.
      *
      * @param   mixed       RGB array or hex string
-     * @return  PHPStateMapper_Election
+     * @return  PHPMapper_Election
      */
     public function setTooCloseToCallThreshold($value)
     {
@@ -72,7 +72,7 @@ class PHPStateMapper_Election extends PHPStateMapper
      * is drawn too close to call.
      *
      * @param   mixed       RGB array or hex string
-     * @return  PHPStateMapper_Election
+     * @return  PHPMapper_Election
      */
     public function setTooCloseToCallMinValue($value)
     {
@@ -85,8 +85,8 @@ class PHPStateMapper_Election extends PHPStateMapper
      * this criteria.
      *
      * @param   mixed       RGB array or hex string
-     * @return  PHPStateMapper_Election
-     * @throws  PHPStateMapper_Exception_BadColorValue
+     * @return  PHPMapper_Election
+     * @throws  PHPMapper_Exception_BadColorValue
      */
     public function setTooCloseToCallColor($color)
     {
@@ -102,8 +102,8 @@ class PHPStateMapper_Election extends PHPStateMapper
      *
      * @param   string      Name of party
      * @param   mixed       Hex color or RGB array
-     * @return  PHPStateMapper_Election
-     * @throws  PHPStateMapper_Exception_BadColorValue
+     * @return  PHPMapper_Election
+     * @throws  PHPMapper_Exception_BadColorValue
      */
     public function addParty($name, $color)
     {
@@ -135,8 +135,8 @@ class PHPStateMapper_Election extends PHPStateMapper
      *
      * @param   string      Name of party
      * @param   mixed       Hex color or RGB array
-     * @return  PHPStateMapper_Election
-     * @throws  PHPStateMapper_Exception_BadColorValue
+     * @return  PHPMapper_Election
+     * @throws  PHPMapper_Exception_BadColorValue
      */
     public function setParties($parties)
     {
@@ -183,13 +183,13 @@ class PHPStateMapper_Election extends PHPStateMapper
      * @param   string      Party name or ID # (from addParty() method)
      * @param   string      Item name (i.e.: MN or Minnesota)
      * @param   integer     Optional number to increase the count by (default 1)
-     * @return  PHPStateMapper
+     * @return  PHPMapper
      */
     public function add($party, $name, $add = 1)
     {
         if (!$partyId = $this->_getPartyId($party))
         {
-            throw new PHPStateMapper_Exception("Party $party does not exist. "
+            throw new PHPMapper_Exception("Party $party does not exist. "
                 . 'Call addParty() first.'
             );
         }
@@ -206,13 +206,13 @@ class PHPStateMapper_Election extends PHPStateMapper
      * @param   string      Item name (i.e.: MN or Minnesota)
      * @param   integer     Number of items belonging to the state
      * @param   integer     Series (default 1)
-     * @return  PHPStateMapper
+     * @return  PHPMapper
      */
     public function set($name, $value, $series = 1)
     {
         if (!$partyId = $this->_getPartyId($party))
         {
-            throw new PHPStateMapper_Exception("Party $party does not exist. "
+            throw new PHPMapper_Exception("Party $party does not exist. "
                 . 'Call addParty() first.'
             );
         }
@@ -229,8 +229,8 @@ class PHPStateMapper_Election extends PHPStateMapper
      *
      * @param   string      File name (or null, for output)
      * @param   integer     Compression level (0-9)
-     * @return  PHPStateMapper_Election
-     * @throws  PHPStateMapper_Exception
+     * @return  PHPMapper_Election
+     * @throws  PHPMapper_Exception
      */
     public function draw($file = null, $compression = 4)
     {
@@ -281,7 +281,7 @@ class PHPStateMapper_Election extends PHPStateMapper
             }
             else
             {
-                $pct = PHPStateMapper::MIN_THRESHOLD;
+                $pct = PHPMapper::MIN_THRESHOLD;
             }
 
             $this->_image->setShading($id, $color, $pct);

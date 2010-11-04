@@ -1,5 +1,5 @@
 <?php
-class PHPStateMapperTest extends PHPStateMapper_TestCase
+class PHPMapperTest extends PHPMapper_TestCase
 {
     public function testSomething()
     {

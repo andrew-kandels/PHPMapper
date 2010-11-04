@@ -1,17 +1,17 @@
 <?php
 /**
- * PHPStateMapper_Import_CSV
+ * PHPMapper_Import_CSV
  *
  * A class designed for loading raw usage-by-state data into the
- * PHPStateMapper class from a comma separated values (CSV)
+ * PHPMapper class from a comma separated values (CSV)
  * data source file.
  *
- * @package     PHPStateMapper
+ * @package     PHPMapper
  * @author      Andrew Kandels <me@andrewkandels.com>
  * @access      public
  */
 
-class PHPStateMapper_Import_CSV extends PHPStateMapper_Import
+class PHPMapper_Import_CSV extends PHPMapper_Import
 {
     private $_file;
     private $_lineNumber;
@@ -22,7 +22,7 @@ class PHPStateMapper_Import_CSV extends PHPStateMapper_Import
     private $_headers;
 
     /**
-     * Creates a PHPStateMapper_CSV object.
+     * Creates a PHPMapper_CSV object.
      *
      * @param   string      File name
      * @Param   boolean     First line = headers?
@@ -30,21 +30,21 @@ class PHPStateMapper_Import_CSV extends PHPStateMapper_Import
      * @param   string      Delimiter (default comma)
      * @param   string      Enclosure (default ")
      * @param   string      Escape (default \)
-     * @throws  PHPStateMapper_Exception_Import
+     * @throws  PHPMapper_Exception_Import
      */
     public function __construct($file, $hasHeaders = false, $length = 1024,
         $delimiter = ',', $enclosure = '"', $escape = '\\')
     {
         if (!file_exists($file))
         {
-            throw new PHPStateMapper_Exception_Import(
+            throw new PHPMapper_Exception_Import(
                 "$file does not exist or is not readable."
             );
         }
 
         if (!$this->_file = fopen($file, 'rt'))
         {
-            throw new PHPStateMapper_Exception_Import(
+            throw new PHPMapper_Exception_Import(
                 "Failed to open $file for reading."
             );
         }
@@ -68,7 +68,7 @@ class PHPStateMapper_Import_CSV extends PHPStateMapper_Import
 
         if (!$firstRow || empty($this->_headers))
         {
-            throw new PHPStateMapper_Exception_Import(
+            throw new PHPMapper_Exception_Import(
                 'After reading first line -- file does not contain any columns. '
                 . 'Are you using a valid delimiter?'
             );
@@ -99,7 +99,7 @@ class PHPStateMapper_Import_CSV extends PHPStateMapper_Import
                 }
             }
 
-            throw new PHPStateMapper_Exception_Import(
+            throw new PHPMapper_Exception_Import(
                 "Column $name not found in file headers."
             );
         }
@@ -108,7 +108,7 @@ class PHPStateMapper_Import_CSV extends PHPStateMapper_Import
             $index = (integer) $name;
             if ($index < 0 || $index > $this->_headers)
             {
-                throw new PHPStateMapper_Exception_Import(
+                throw new PHPMapper_Exception_Import(
                     "Column #$index not valid. Only " . $this->_headers
                     . ' found on first row.'
                 );
@@ -144,7 +144,7 @@ class PHPStateMapper_Import_CSV extends PHPStateMapper_Import
         // Other error
         if (!$line)
         {
-            throw new PHPStateMapper_Exception_Import(
+            throw new PHPMapper_Exception_Import(
                 'fgetcsv() failed when attempting to read line from file.'
             );
         }
@@ -159,9 +159,9 @@ class PHPStateMapper_Import_CSV extends PHPStateMapper_Import
      * Maps a column in the data source to a known value such
      * as country or region.
      *
-     * @param   integer     Type constant (PHPStateMapper::COUNTRY, etc.)
+     * @param   integer     Type constant (PHPMapper::COUNTRY, etc.)
      * @param   mixed       Value
-     * @throws  PHPStateMapper_Exception_Import
+     * @throws  PHPMapper_Exception_Import
      */
     public function map($id, $name)
     {
@@ -210,9 +210,9 @@ class PHPStateMapper_Import_CSV extends PHPStateMapper_Import
         $extra = sprintf('on line number %d', $this->_lineNumber);
 
         return array(
-            $this->_getMapValueFromArray(PHPStateMapper::COUNTRY, $line, $extra),
-            $this->_getMapValueFromArray(PHPStateMapper::REGION, $line, $extra),
-            $this->_getMapValueFromArray(PHPStateMapper::VALUE, $line, $extra)
+            $this->_getMapValueFromArray(PHPMapper::COUNTRY, $line, $extra),
+            $this->_getMapValueFromArray(PHPMapper::REGION, $line, $extra),
+            $this->_getMapValueFromArray(PHPMapper::VALUE, $line, $extra)
         );
     }
 }

@@ -1,41 +1,41 @@
 <?php
 /**
- * PHPStateMapper_Map_Image
+ * PHPMapper_Map_Image
  *
  * Model for loading the map image, shading in areas, and outputting
  * the result.
  *
- * @package     PHPStateMapper
+ * @package     PHPMapper
  * @author      Andrew Kandels <me@andrewkandels.com>
  * @access      public
  */
 
-class PHPStateMapper_Map_Image
+class PHPMapper_Map_Image
 {
     protected $_maxWidth    = null;
     protected $_maxHeight   = null;
     protected $_image       = null;
 
     /**
-     * Creates a PHPStateMapper_Map class object.
+     * Creates a PHPMapper_Map class object.
      *
      * @param   string      Image file
      * @return  void
-     * @throws  PHPStateMapper_Exception
+     * @throws  PHPMapper_Exception
      */
     public function __construct($file)
     {
         // GD is required for image processing
         if (!extension_loaded('gd') || !function_exists('imagecreatefrompng'))
         {
-            throw new PHPStateMapper_Exception(
+            throw new PHPMapper_Exception(
                 'The PHP GD extension is required.'
             );;
         }
 
         if (!$this->_image = imagecreatefrompng($file))
         {
-            throw new PHPStateMapper_Exception_Image("Failed to load {$file}.");
+            throw new PHPMapper_Exception_Image("Failed to load {$file}.");
         }
 
         list($this->_maxWidth, $this->_maxHeight) = getimagesize($file);
@@ -47,7 +47,7 @@ class PHPStateMapper_Map_Image
      * and such.
      *
      * @param   integer     Number of shaders
-     * @return  PHPStateMapper_Map_Image
+     * @return  PHPMapper_Map_Image
      */
     public function setNumAreas($num)
     {
@@ -128,7 +128,7 @@ class PHPStateMapper_Map_Image
      * Resizes the image a new width while maintaining aspect ratio.
      *
      * @param   integer     Width in pixels
-     * @return  PHPStateMapper_Image
+     * @return  PHPMapper_Image
      */
     public function resize($width)
     {
@@ -137,10 +137,10 @@ class PHPStateMapper_Map_Image
         {
             $width = $this->_maxWidth;
         }
-        else if ($width < PHPStateMapper::MIN_WIDTH)
+        else if ($width < PHPMapper::MIN_WIDTH)
         {
-            throw new PHPStateMapper_Exception(
-                'Image width should be at least ' . PHPStateMapper::MIN_WIDTH . ' pixels wide.'
+            throw new PHPMapper_Exception(
+                'Image width should be at least ' . PHPMapper::MIN_WIDTH . ' pixels wide.'
             );
         }
 
@@ -165,8 +165,8 @@ class PHPStateMapper_Map_Image
      * Outputs a GD image object either to the browser or to a file.
      *
      * @param   string      File name or null for standard out
-     * @return  PHPStateMapper_Image
-     * @throws  PHPStateMapper_Exception_Image
+     * @return  PHPMapper_Image
+     * @throws  PHPMapper_Exception_Image
      */
     public function draw($file = null, $compression = 4)
     {
@@ -177,7 +177,7 @@ class PHPStateMapper_Map_Image
 
         if (!imagepng($this->_image, $file, $compression))
         {
-            throw new PHPStateMapper_Exception_Image("Failed to create $file");
+            throw new PHPMapper_Exception_Image("Failed to create $file");
         }
 
         imagedestroy($this->_image);
@@ -196,7 +196,7 @@ class PHPStateMapper_Map_Image
      *
      * @param   mixed       RGB color or hex string
      * @return  array       RGB
-     * @throws  PHPStateMapper_Exception_BadColorValue
+     * @throws  PHPMapper_Exception_BadColorValue
      */
     public function getRgbColorFromInput($color)
     {
@@ -204,7 +204,7 @@ class PHPStateMapper_Map_Image
         {
             if (count($color) != 3)
             {
-                throw new PHPStateMapper_Exception_BadColorValue();
+                throw new PHPMapper_Exception_BadColorValue();
             }
             else
             {
@@ -226,7 +226,7 @@ class PHPStateMapper_Map_Image
      * @param   integer     ID on the map (1-255) to shade
      * @param   mixed       Color (RGB array or hex color)
      * @param   float       Alpha percentage (1 = fully visible, 0 = fully opaque)
-     * @return  PHPStateMapper_Image
+     * @return  PHPMapper_Image
      */
     public function setShading($id, $color, $pct = 1.0)
     {
@@ -235,15 +235,15 @@ class PHPStateMapper_Map_Image
         $index = imagecolorexact($this->_image, $r, $g, $b);
 
         // Pull up to the minimum to avoid white-out
-        if ($pct < PHPStateMapper::MIN_THRESHOLD)
+        if ($pct < PHPMapper::MIN_THRESHOLD)
         {
-            $pct = PHPStateMapper::MIN_THRESHOLD;
+            $pct = PHPMapper::MIN_THRESHOLD;
         }
 
         // Detect craziness
         if ($pct > 1)
         {
-            throw new PHPStateMapper_Exception_BadColorValue(
+            throw new PHPMapper_Exception_BadColorValue(
                 "Alpha percentage should be 0 - 1, not $pct."
             );
         }

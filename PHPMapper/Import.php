@@ -1,15 +1,15 @@
 <?php
 /**
- * PHPStateMapper_Import
+ * PHPMapper_Import
  *
  * A abstract class designed for loading raw usage-by-state data from
  * different formats (like CSV).
  *
- * @package     PHPStateMapper
+ * @package     PHPMapper
  * @author      Andrew Kandels <me@andrewkandels.com>
  */
 
-abstract class PHPStateMapper_Import
+abstract class PHPMapper_Import
 {
     protected $_map             = array();
 
@@ -18,11 +18,11 @@ abstract class PHPStateMapper_Import
      * return the necessary getRowData method.
      *
      * @return  void
-     * @throws  PHPStateMapper_Exception_Import
+     * @throws  PHPMapper_Exception_Import
      */
     public function getRowData()
     {
-        throw new PHPStateMapper_Exception_Import(
+        throw new PHPMapper_Exception_Import(
             'Class ' . get_class($this) . ' does not implement a getRowData method.'
         );
     }
@@ -31,9 +31,9 @@ abstract class PHPStateMapper_Import
      * Maps a column in the data source to a known value such
      * as country or region.
      *
-     * @param   integer     Type constant (PHPStateMapper::COUNTRY, etc.)
+     * @param   integer     Type constant (PHPMapper::COUNTRY, etc.)
      * @param   mixed       Value
-     * @throws  PHPStateMapper_Exception_Import
+     * @throws  PHPMapper_Exception_Import
      */
     public function map($id, $name)
     {
@@ -44,17 +44,17 @@ abstract class PHPStateMapper_Import
     /**
      * Returns the default value for a column by constant.
      *
-     * @param   integer     Type constant (PHPStateMapper::COUNTRY, etc.)
+     * @param   integer     Type constant (PHPMapper::COUNTRY, etc.)
      * @return  mixed       Default value
      */
     protected function _getMapDefault($id)
     {
         switch ($id)
         {
-            case PHPStateMapper::COUNTRY:
-                return PHPStateMapper::DEFAULT_COUNTRY;
+            case PHPMapper::COUNTRY:
+                return PHPMapper::DEFAULT_COUNTRY;
 
-            case PHPStateMapper::VALUE:
+            case PHPMapper::VALUE:
                 return 1; // additive
 
             default:
@@ -65,7 +65,7 @@ abstract class PHPStateMapper_Import
     /**
      * Retrieves a previously mapped value.
      *
-     * @param   integer     Type constant (PHPStateMapper::COUNTRY, etc.)
+     * @param   integer     Type constant (PHPMapper::COUNTRY, etc.)
      * @return  mixed       Value
      */
     protected function _getMap($id)
@@ -78,11 +78,11 @@ abstract class PHPStateMapper_Import
      * it returns the trimmed result. If not, it returns the default
      * value or false if there is no default value.
      *
-     * @param   integer     Type constant (PHPStateMapper::COUNTRY, etc.)
+     * @param   integer     Type constant (PHPMapper::COUNTRY, etc.)
      * @param   array       Data array
      * @param   string      Additional debugging information (e.g.: line number)
      * @return  string      Scalar value
-     * @throws  PHPStateMapper_Exception_Import
+     * @throws  PHPMapper_Exception_Import
      */
     protected function _getMapValueFromArray($id, array $arr, $extra = '')
     {
@@ -90,7 +90,7 @@ abstract class PHPStateMapper_Import
         {
             if (!isset($arr[$index]))
             {
-                throw new PHPStateMapper_Exception_Import(
+                throw new PHPMapper_Exception_Import(
                     sprintf('Column index specified as %s not found%s.',
                         $index,
                         !empty($extra) ? ' ' . $extra : ''
@@ -109,10 +109,10 @@ abstract class PHPStateMapper_Import
 
         switch ($id)
         {
-            case PHPStateMapper::COUNTRY:
+            case PHPMapper::COUNTRY:
                 if (strlen($value) != 2)
                 {
-                    throw new PHPStateMapper_Exception_Import(
+                    throw new PHPMapper_Exception_Import(
                         'Country code should be a valid 2-letter ISO value (e.g.: US). '
                         . 'Found "' . $value . '"' . $extra
                     );

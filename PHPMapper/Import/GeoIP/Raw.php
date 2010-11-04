@@ -1,20 +1,20 @@
 <?php
 /**
- * PHPStateMapper_Import_GeoIPRaw
+ * PHPMapper_Import_GeoIPRaw
  *
  * When fed a string or file, it will scan each line for a valid
  * IPv4 address and decode it to its physical location on a map
- * and then import that data to PHPStateMapper.
+ * and then import that data to PHPMapper.
  *
  * Requires the PHP geoip PECL extension. See doc/geoip.html for
  * instructions on installation.
  *
- * @package     PHPStateMapper
+ * @package     PHPMapper
  * @author      Andrew Kandels <me@andrewkandels.com>
  * @access      public
  */
 
-class PHPStateMapper_Import_GeoIP_Raw extends PHPStateMapper_Import
+class PHPMapper_Import_GeoIP_Raw extends PHPMapper_Import
 {
     private $_file;
     private $_lines;
@@ -24,8 +24,8 @@ class PHPStateMapper_Import_GeoIP_Raw extends PHPStateMapper_Import
     {
         if (!function_exists('geoip_record_by_name'))
         {
-            throw new PHPStateMapper_Exception_Import(
-                'PECL geoip extension is required by PHPStateMapper GeoIP '
+            throw new PHPMapper_Exception_Import(
+                'PECL geoip extension is required by PHPMapper GeoIP '
                 . 'functionality. See ' . realpath(dirname(__FILE__) . '../../../doc')
                 . '/geoip.html for installation instructions.'
             );
@@ -38,14 +38,14 @@ class PHPStateMapper_Import_GeoIP_Raw extends PHPStateMapper_Import
      * Sets the file in which to scan for IPv4 network addresses (line by line).
      *
      * @param   string      File naem
-     * @return  PHPStateMapper_Import_GeoIP_Raw
-     * @throws  PHPStateMapper_Exception_Import
+     * @return  PHPMapper_Import_GeoIP_Raw
+     * @throws  PHPMapper_Exception_Import
      */
     public function setFile($file)
     {
         if (!$this->_file = fopen($file, 'rt'))
         {
-            throw new PHPStateMapper_Exception_Import(
+            throw new PHPMapper_Exception_Import(
                 "Unable to fopen $file for reading."
             );
         }
@@ -57,7 +57,7 @@ class PHPStateMapper_Import_GeoIP_Raw extends PHPStateMapper_Import
      * should be scanned for IP addresses.
      *
      * @param   mixed       Array of lines or string data
-     * @return  PHPStateMapper_Import_GeoIP_Raw
+     * @return  PHPMapper_Import_GeoIP_Raw
      */
     public function setData($val)
     {

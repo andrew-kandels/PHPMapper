@@ -1,31 +1,31 @@
 <?php
 /**
- * PHPStateMapper_Map_CSV
+ * PHPMapper_Map_CSV
  *
  * Model for loading the region data for a map from a CSV file.
  *
- * @package     PHPStateMapper
+ * @package     PHPMapper
  * @author      Andrew Kandels <me@andrewkandels.com>
  * @access      public
  */
 
-class PHPStateMapper_Map_CSV
+class PHPMapper_Map_CSV
 {
     protected $_data        = null;
     private $_lineNumber    = 0;
 
     /**
-     * Creates a PHPStateMapper_Map_CSV class object.
+     * Creates a PHPMapper_Map_CSV class object.
      *
      * @param   string      CSV file name
      * @return  void
-     * @throws  PHPStateMapper_Exception
+     * @throws  PHPMapper_Exception
      */
     public function __construct($file)
     {
         if (!$this->_data = fopen($file, 'rt'))
         {
-            throw new PHPStateMapper_Exception(
+            throw new PHPMapper_Exception(
                 "Map data file $file could not be opened for reading."
             );
         }
@@ -43,7 +43,7 @@ class PHPStateMapper_Map_CSV
      * ))
      *
      * @return  array
-     * @throws  PHPStateMapper_Exception
+     * @throws  PHPMapper_Exception
      */
     public function get()
     {
@@ -68,7 +68,7 @@ class PHPStateMapper_Map_CSV
 
         if (count($line) < 2)
         {
-            throw new PHPStateMapper_Exception(
+            throw new PHPMapper_Exception(
                 "Line number {$this->_lineNumber} of map data file does not contain "
                 . "enough columns. Expecting at least 2 (id, country)."
             );

@@ -1,13 +1,13 @@
 <?php
 /**
- * PHPStateMapper_Exception_BadColorValue
+ * PHPMapper_Exception_BadColorValue
  *
- * Thrown if PHPStateMapper is given an invalid color value.
+ * Thrown if PHPMapper is given an invalid color value.
  *
- * @package     PHPStateMapper
+ * @package     PHPMapper
  * @author      Andrew Kandels <me@andrewkandels.com>
  */
-class PHPStateMapper_Exception_BadColorValue extends PHPStateMapper_Exception
+class PHPMapper_Exception_BadColorValue extends PHPMapper_Exception
 {
     public function __construct()
     {

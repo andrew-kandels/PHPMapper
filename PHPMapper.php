@@ -1,8 +1,8 @@
 <?php
 /**
- * PHPStateMapper
+ * PHPMapper
  *
- * PHPStateMapper is a class for generating a map of the United States with states
+ * PHPMapper is a class for generating a map of the United States with states
  * shaded darker to represent data in a report. It can be thought of as a visual
  * interpretation of "usage by state" and would be an ideal candidate for use in
  * reports on sales, usage, adoption, traffic, and so forth.
@@ -36,30 +36,30 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  * @category    Reports
- * @package     PHPStateMapper
+ * @package     PHPMapper
  * @author      Andrew Kandels <me@andrewkandels.com>
  * @copyright   2010 Andrew Kandels <me@andrewkandels.com>
  * @license     http://www.opensource.org/licenses/bsd-license.php  BSD License
- * @link        http://andrewkandels.com/PHPStateMapper
+ * @link        http://andrewkandels.com/PHPMapper
  * @access      public
  */
 
 $base = dirname(__FILE__);
 
-require_once "$base/PHPStateMapper/Exception.php";
-require_once "$base/PHPStateMapper/Exception/Geo.php";
-require_once "$base/PHPStateMapper/Exception/Image.php";
-require_once "$base/PHPStateMapper/Exception/Import.php";
-require_once "$base/PHPStateMapper/Exception/BadColorValue.php";
-require_once "$base/PHPStateMapper/Election.php";
-require_once "$base/PHPStateMapper/Map/CSV.php";
-require_once "$base/PHPStateMapper/Map/Image.php";
-require_once "$base/PHPStateMapper/Import.php";
-require_once "$base/PHPStateMapper/Import/CSV.php";
-require_once "$base/PHPStateMapper/Import/PDO.php";
-require_once "$base/PHPStateMapper/Import/GeoIP/Raw.php";
+require_once "$base/PHPMapper/Exception.php";
+require_once "$base/PHPMapper/Exception/Geo.php";
+require_once "$base/PHPMapper/Exception/Image.php";
+require_once "$base/PHPMapper/Exception/Import.php";
+require_once "$base/PHPMapper/Exception/BadColorValue.php";
+require_once "$base/PHPMapper/Election.php";
+require_once "$base/PHPMapper/Map/CSV.php";
+require_once "$base/PHPMapper/Map/Image.php";
+require_once "$base/PHPMapper/Import.php";
+require_once "$base/PHPMapper/Import/CSV.php";
+require_once "$base/PHPMapper/Import/PDO.php";
+require_once "$base/PHPMapper/Import/GeoIP/Raw.php";
 
-class PHPStateMapper
+class PHPMapper
 {
     const MIN_THRESHOLD     = 0.10;     // Lightest alpha to draw. 0.1 = 10% opacity
     const DEFAULT_COUNTRY   = 'US';     // Default 2-letter ISO code
@@ -92,7 +92,7 @@ class PHPStateMapper
      * @param   string      Map name (default is us_states)
      * @param   string      Base path (defaults to project path + /maps)
      * @return  void
-     * @throws  PHPStateMapper_Exception
+     * @throws  PHPMapper_Exception
      */
     public function __construct($map = 'world', $base = null)
     {
@@ -106,7 +106,7 @@ class PHPStateMapper
         }
 
         $this->_base    = preg_replace('/\/+$/', '', $this->_base) . '/' . $map . '.';
-        $this->_image   = new PHPStateMapper_Map_Image($this->_base . 'png');
+        $this->_image   = new PHPMapper_Map_Image($this->_base . 'png');
 
         $this->_loadAreas();
     }
@@ -119,7 +119,7 @@ class PHPStateMapper
      */
     private function _loadAreas()
     {
-        $csv = new PHPStateMapper_Map_CSV($this->_base . 'csv');
+        $csv = new PHPMapper_Map_CSV($this->_base . 'csv');
         while ($area = $csv->get())
         {
             if ($area[2] !== null) foreach ($area[2] as $index => $name)
@@ -141,7 +141,7 @@ class PHPStateMapper
      * alpha value, based on their relevance in comparison.
      *
      * @param   mixed       Hex color or RGB array
-     * @return  PHPStateMapper
+     * @return  PHPMapper
      */
     public function setColor($color)
     {
@@ -155,7 +155,7 @@ class PHPStateMapper
      * preserve the aspect ratio.
      *
      * @param   integer     Width in pixels
-     * @return  PHPStateMapper
+     * @return  PHPMapper
      */
     public function setWidth($width)
     {
@@ -164,11 +164,11 @@ class PHPStateMapper
     }
 
     /**
-     * Imports data from a class extending PHPStateMapper_Import.
+     * Imports data from a class extending PHPMapper_Import.
      *
-     * @param   PHPStateMapper_Import
-     * @return  PHPStateMapper
-     * @throws  PHPStateMapper_Exception_Import
+     * @param   PHPMapper_Import
+     * @return  PHPMapper
+     * @throws  PHPMapper_Exception_Import
      */
     public function import($obj)
     {
@@ -186,7 +186,7 @@ class PHPStateMapper
      *
      * @param   string      2-letter ISO country code
      * @param   string      Region name
-     * @return  PHPStateMapper
+     * @return  PHPMapper
      */
     public function lookup($country, $region = null)
     {
@@ -218,7 +218,7 @@ class PHPStateMapper
      * @param   string      Region name
      * @param   integer     Value to add
      * @param   integer     Series (optional) or defaults to 1
-     * @return  PHPStateMapper
+     * @return  PHPMapper
      */
     public function add($country, $region = null, $value = 1, $series = 1)
     {
@@ -244,7 +244,7 @@ class PHPStateMapper
      * @param   string      Region name
      * @param   integer     Value to set
      * @param   integer     Series (optional) or defaults to 1
-     * @return  PHPStateMapper
+     * @return  PHPMapper
      */
     public function set($country, $region = null, $value = 1, $series = 1)
     {
@@ -263,7 +263,7 @@ class PHPStateMapper
      * target/forecasted value instead, you can set it here.
      *
      * @param   integer     Target/Forecast value to compare against
-     * @return  PHPStateMapper
+     * @return  PHPMapper
      */
     public function setTargetValue($value)
     {
@@ -307,7 +307,7 @@ class PHPStateMapper
      * @param   string      File name, or none to write to the browser
      * @param   integer     Compression level (1-10)
      * @param   integer     Series to draw (1 is default)
-     * @return  PHPStateMapper
+     * @return  PHPMapper
      */
     public function draw($file = null, $compression = 4, $series = 1)
     {

@@ -1,15 +1,15 @@
 #!/bin/bash
 ############################################################
 #
-# PHPStateMapper / autoload.sh
+# PHPMapper / autoload.sh
 #
 # This script removes all "require_once" statements from the
-# PHPStateMapper project. It's intended to be run if
+# PHPMapper project. It's intended to be run if
 # autoloading is enabled to increase load times.
 #
 # Author:   Andrew Kandels <me@andrewkandels.com>
 # Date:     October 28, 2010
-# Project:  http://andrewkandels.com/PHPStateMapper
+# Project:  http://andrewkandels.com/PHPMapper
 #
 ############################################################
 
