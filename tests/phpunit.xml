@@ -1,7 +1,7 @@
 <phpunit bootstrap="./bootstrap.php" colors="true">
     <testsuites>
-        <testsuite name="PHPStateMapperTests">
-            <directory>PHPStateMapper</directory>
+        <testsuite name="PHPMapperTests">
+            <directory>PHPMapper</directory>
         </testsuite>
     </testsuites>
     <filter>

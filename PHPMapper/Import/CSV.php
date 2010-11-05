@@ -42,7 +42,7 @@ class PHPMapper_Import_CSV extends PHPMapper_Import
             );
         }
 
-        if (!$this->_file = fopen($file, 'rt'))
+        if (!$this->_file = @fopen($file, 'rt'))
         {
             throw new PHPMapper_Exception_Import(
                 "Failed to open $file for reading."
@@ -55,7 +55,7 @@ class PHPMapper_Import_CSV extends PHPMapper_Import
         $this->_escape = $escape;
         $this->_hasHeaders = $hasHeaders;
 
-        $firstRow = $this->_getRow();
+        $firstRow = $this->_getRow(true);
 
         if ($hasHeaders)
         {
@@ -64,6 +64,7 @@ class PHPMapper_Import_CSV extends PHPMapper_Import
         else
         {
             $this->_headers = count($firstRow);
+            rewind($this->_file);
         }
 
         if (!$firstRow || empty($this->_headers))
@@ -87,7 +88,7 @@ class PHPMapper_Import_CSV extends PHPMapper_Import
      * @return  integer
      * @throws  PHPStateValues_Exception_Import
      */
-    private function _getColumn($name)
+    public function getColumn($name)
     {
         if (is_array($this->_headers))
         {
@@ -119,11 +120,24 @@ class PHPMapper_Import_CSV extends PHPMapper_Import
     }
 
     /**
+     * Returns either the file headers (array) or the number of
+     * columns depending on whether the object was instantiated with
+     * headers or not.
+     *
+     * @return  mixed
+     */
+    public function getHeaders()
+    {
+        return $this->_headers;
+    }
+
+    /**
      * Reads a line from the data source file using fgetcsv().
      *
+     * @param   boolean     Ignore column/header mismatch (useful for loading 1st line)
      * @return  array       Line data
      */
-    private function _getRow()
+    private function _getRow($ignoreMismatch = false)
     {
         $line = fgetcsv($this->_file, $this->_length, $this->_delimiter,
             $this->_enclosure, $this->_escape
@@ -141,11 +155,22 @@ class PHPMapper_Import_CSV extends PHPMapper_Import
             return false;
         }
 
+        $expectedHeaders = $this->_hasHeaders
+            ? count($this->_headers)
+            : $this->_headers;
+
         // Other error
         if (!$line)
         {
             throw new PHPMapper_Exception_Import(
                 'fgetcsv() failed when attempting to read line from file.'
+            );
+        }
+        else if (!$ignoreMismatch && count($line) != $expectedHeaders)
+        {
+            throw new PHPMapper_Exception_Import(
+                'Line #' . $this->_lineNumber . ' has ' . count($line) . ' columns. Expecting '
+                . $expectedHeaders . '.'
             );
         }
         else
@@ -165,18 +190,8 @@ class PHPMapper_Import_CSV extends PHPMapper_Import
      */
     public function map($id, $name)
     {
-        if ($this->_hasHeaders && is_string($name))
-        {
-            foreach ($this->_headers as $index => $hdr)
-            {
-                if (!strcasecmp($name, $hdr))
-                {
-                    return parent::map($id, $index);
-                }
-            }
-        }
-
-        return parent::map($id, $name);
+        $index = $this->getColumn($name);
+        return parent::map($id, $index);
     }
 
     /**

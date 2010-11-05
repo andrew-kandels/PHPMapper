@@ -57,6 +57,7 @@ require_once "$base/PHPMapper/Map/Image.php";
 require_once "$base/PHPMapper/Import.php";
 require_once "$base/PHPMapper/Import/CSV.php";
 require_once "$base/PHPMapper/Import/PDO.php";
+require_once "$base/PHPMapper/Import/Array.php";
 require_once "$base/PHPMapper/Import/GeoIP/Raw.php";
 
 class PHPMapper
@@ -96,6 +97,18 @@ class PHPMapper
      */
     public function __construct($map = 'world', $base = null)
     {
+        $this->setMap($map, $base);
+    }
+
+    /**
+     * Sets the map in which to draw and loads the region information.
+     *
+     * @param   string      Map name
+     * @param   string      Base directory (defaults to a guess)
+     * @return  PHPMapper
+     */
+    public function setMap($map, $base = null)
+    {
         if ($base === null)
         {
             $this->_base = dirname(__FILE__) . '/maps';
@@ -109,6 +122,29 @@ class PHPMapper
         $this->_image   = new PHPMapper_Map_Image($this->_base . 'png');
 
         $this->_loadAreas();
+
+        return $this;
+    }
+
+    /**
+     * Returns the base directory path for the map specified in the
+     * constructor.
+     *
+     * @return  string
+     */
+    public function getBase()
+    {
+        return $this->_base;
+    }
+
+    /**
+     * Returns the image object used to draw the PNG output.
+     *
+     * @return  PHPMapper_Map_Image
+     */
+    public function getImage()
+    {
+        return $this->_image;
     }
 
     /**
@@ -120,6 +156,8 @@ class PHPMapper
     private function _loadAreas()
     {
         $csv = new PHPMapper_Map_CSV($this->_base . 'csv');
+        $this->_areas = array();
+
         while ($area = $csv->get())
         {
             if ($area[2] !== null) foreach ($area[2] as $index => $name)
@@ -145,8 +183,34 @@ class PHPMapper
      */
     public function setColor($color)
     {
-        $this->_color = $color;
+        if (is_array($color) && count($color) != 3)
+        {
+            throw new PHPMapper_Exception(
+                'Invalid array to setColor method: accepts a 3-member RGB array or a hex color.'
+            );
+        }
+        else if (is_string($color) && !preg_match('/^[0-9a-f]{6}$/i', $color))
+        {
+            throw new PHPMapper_Exception(
+                'Invalid hex color to setColor method. Should be 6 hexidecimal characters.'
+            );
+        }
+        else
+        {
+            $this->_color = $color;
+        }
+
         return $this;
+    }
+
+    /**
+     * Retrieves the color of the map.
+     *
+     * @return  string
+     */
+    public function getColor()
+    {
+        return $this->_color;
     }
 
     /**
@@ -159,8 +223,25 @@ class PHPMapper
      */
     public function setWidth($width)
     {
+        if ($width < self::MIN_WIDTH)
+        {
+            throw new PHPMapper_Exception(
+                'Minimum width must be at least ' . self::MIN_WIDTH . ' pixels.'
+            );
+        }
+
         $this->_width = $width;
         return $this;
+    }
+
+    /**
+     * Retrieves the width (in pixels) the map will be rendered as.
+     *
+     * @return  integer
+     */
+    public function getWidth()
+    {
+        return $this->_width;
     }
 
     /**
@@ -279,7 +360,7 @@ class PHPMapper
      * @param   integer     Series (default 1)
      * @return  integer
      */
-    protected function _getMaxValue($series = 1)
+    public function getMaxValue($series = 1)
     {
         if ($this->_targetValue !== null)
         {
@@ -302,6 +383,49 @@ class PHPMapper
     }
 
     /**
+     * Retrieves the value for a country/region combination.
+     *
+     * @param   integer     Area id
+     * @param   integer     Series (default 1)
+     * @return  integer     Value
+     */
+    public function get($id, $series = 1)
+    {
+        return isset($this->_areas[$id]['series'][$series])
+            ? $this->_areas[$id]['series'][$series]
+            : 0;
+    }
+
+    /**
+     * Get the alpha shading color (0-1) of an area after
+     * comparing it to the max/target value.
+     *
+     * @param   integer     Area ID
+     * @param   integer     Max/target value
+     * @param   integer     Series
+     * @return  float       0-1 percentage value
+     */
+    public function getAreaAlphaPct($id, $max, $series = 1)
+    {
+        $mp = $this->_areas[$id];
+        $value = $this->get($id);
+
+        if ($max > 0)
+        {
+            if (($pct = $value / $max) > 1)
+            {
+                $pct = 1.0;
+            }
+        }
+        else
+        {
+            $pct = self::MIN_THRESHOLD;
+        }
+
+        return $pct;
+    }
+
+    /**
      * Outputs a PNG image reflecting the values provided to add/set.
      *
      * @param   string      File name, or none to write to the browser
@@ -312,31 +436,16 @@ class PHPMapper
     public function draw($file = null, $compression = 4, $series = 1)
     {
         $this->_image->setNumAreas(count($this->_areas));
-        $max = $this->_getMaxValue($series);
+        $max = $this->getMaxValue($series);
 
         foreach ($this->_areas as $id => $mp)
         {
-            $value = isset($mp['series'][$series])
-                ? $mp['series'][$series]
-                : 0;
-            if ($max > 0)
-            {
-                if (($pct = $value / $max) > 1)
-                {
-                    $pct = 1;
-                }
-            }
-            else
-            {
-                $pct = self::MIN_THRESHOLD;
-            }
-
+            $pct = $this->getAreaAlphaPct($id, $max, $series);
             $this->_image->setShading($id, $this->_color, $pct);
         }
 
-        $this->_image
-            ->resize($this->_width)
-            ->draw($file, $compression);
+        $this->_image->resize($this->_width)
+                     ->draw($file, $compression);
 
         return $this;
     }

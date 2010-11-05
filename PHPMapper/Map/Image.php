@@ -33,6 +33,13 @@ class PHPMapper_Map_Image
             );;
         }
 
+        if (!file_exists($file))
+        {
+            throw new PHPMapper_Exception_Image(
+                "Map image '$file' does not exist."
+            );
+        }
+
         if (!$this->_image = imagecreatefrompng($file))
         {
             throw new PHPMapper_Exception_Image("Failed to load {$file}.");
@@ -51,6 +58,19 @@ class PHPMapper_Map_Image
      */
     public function setNumAreas($num)
     {
+        if ($num > 254)
+        {
+            throw new PHPMapper_Exception_Image(
+                'Too many areas. Maximum of 254 areas are allowed per map.'
+            );
+        }
+        else if ($num < 0)
+        {
+            throw new PHPMapper_Exception_Image(
+                'Number of areas cannot be a negative number.'
+            );
+        }
+
         // White-out pixels that aren't valid areas
         for ($i = 0; $i < imagecolorstotal($this->_image); $i++)
         {
@@ -118,9 +138,9 @@ class PHPMapper_Map_Image
         if ($pct > 1) $pct = 1;
         if ($color === null) $color = $this->_color;
         return array(
-            ((1 - $pct) * 255) + ($pct * $color[0]),
-            ((1 - $pct) * 255) + ($pct * $color[1]),
-            ((1 - $pct) * 255) + ($pct * $color[2])
+            (int) (((1 - $pct) * 255) + ($pct * $color[0])),
+            (int) (((1 - $pct) * 255) + ($pct * $color[1])),
+            (int) (((1 - $pct) * 255) + ($pct * $color[2]))
         );
     }
 
@@ -135,11 +155,13 @@ class PHPMapper_Map_Image
         // Validation
         if ($width > $this->_maxWidth)
         {
-            $width = $this->_maxWidth;
+            throw new PHPMapper_Exception_Image(
+                'Image width too large. Maximum width for map is ' . $this->_maxWidth . ' pixels.'
+            );
         }
         else if ($width < PHPMapper::MIN_WIDTH)
         {
-            throw new PHPMapper_Exception(
+            throw new PHPMapper_Exception_Image(
                 'Image width should be at least ' . PHPMapper::MIN_WIDTH . ' pixels wide.'
             );
         }
@@ -170,7 +192,7 @@ class PHPMapper_Map_Image
      */
     public function draw($file = null, $compression = 4)
     {
-        if (!$file)
+        if (!$file && !headers_sent())
         {
             header('Content-type: image/png');
         }
@@ -213,7 +235,14 @@ class PHPMapper_Map_Image
         }
         else
         {
-            $color = $this->convertHexToRgb($color);
+            if (!preg_match('/^[0-9a-f]{6}$/i', $color))
+            {
+                throw new PHPMapper_Exception_BadColorValue();
+            }
+            else
+            {
+                $color = $this->convertHexToRgb($color);
+            }
         }
 
         return $color;
@@ -230,6 +259,19 @@ class PHPMapper_Map_Image
      */
     public function setShading($id, $color, $pct = 1.0)
     {
+        if ($id > 254)
+        {
+            throw new PHPMapper_Exception_Image(
+                'Color index too high. Cannot exceed 254.'
+            );
+        }
+        elseif ($id < 1)
+        {
+            throw new PHPMapper_Exception_Image(
+                'Color index too low. Must be at least 1.'
+            );
+        }
+
         // Get the color assigned to the item
         $r = $g = $b = $id;
         $index = imagecolorexact($this->_image, $r, $g, $b);

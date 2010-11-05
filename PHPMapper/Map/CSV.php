@@ -23,7 +23,24 @@ class PHPMapper_Map_CSV
      */
     public function __construct($file)
     {
-        if (!$this->_data = fopen($file, 'rt'))
+        $this->setFile($file);
+    }
+
+    /**
+     * Sets the CSV to serve as the data source.
+     *
+     * @param   string      CSV file name
+     * @return  PHPMapper_Map_CSV
+     */
+    public function setFile($file)
+    {
+        if ($this->_data !== null)
+        {
+            fclose($this->_data);
+            $this->_data = null;
+        }
+
+        if (!$this->_data = @fopen($file, 'rt'))
         {
             throw new PHPMapper_Exception(
                 "Map data file $file could not be opened for reading."
@@ -68,7 +85,7 @@ class PHPMapper_Map_CSV
 
         if (count($line) < 2)
         {
-            throw new PHPMapper_Exception(
+            throw new PHPMapper_Exception_Import(
                 "Line number {$this->_lineNumber} of map data file does not contain "
                 . "enough columns. Expecting at least 2 (id, country)."
             );
