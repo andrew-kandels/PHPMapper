@@ -1,0 +1,20 @@
+<div id="exception">
+
+<?php echo $this->message ?>
+
+</div>
+
+<?php if ('production' != $this->env): ?>
+
+<div id="dev_exception">
+
+    <h2>Exception Message:</h2>
+    <pre class="major"><?php echo nl2br($this->exception->getMessage()); ?></pre>
+
+    <h2>Exception Information:</h2>
+    <pre><?php echo nl2br(Tendesk_Utility::formatBacktrace($this->exception)); ?></pre>
+
+</div>
+
+<?php endif ?>
+

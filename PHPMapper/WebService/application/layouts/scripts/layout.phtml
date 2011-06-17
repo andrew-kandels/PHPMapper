@@ -1,0 +1,23 @@
+<?php $this->doctype(); ?>
+<html xmlns="https://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+    <?php echo "\n" . $this->headMeta(); ?>
+    <?php echo "\n" . $this->headTitle(); ?>
+    <?php echo "\n" . $this->headStyle(); ?>
+    <?php echo "\n" . $this->headLink() . "\n"; ?>
+    <?php /* Only here because it needs to be at the top, rest of the scripts go to the bottom */ ?>
+    <script type="text/javascript" src="/js/jquery-1.4.2.min.js"></script>
+    <?php /* Don't add more scripts here! Add them to the view controller! */ ?>
+</head>
+<body>
+<h1 class="no-display"><?php echo $this->placeholder('Zend_View_Helper_HeadTitle'); ?></h1>
+<?php echo $this->render('_header.phtml'); ?>
+<?php echo $this->render('_left.phtml'); ?>
+<div id="right-container">
+    <?php echo $this->layout()->content; ?>
+</div>
+<?php echo $this->render('_footer.phtml'); ?>
+<?php echo $this->headScript(); ?>
+</body>
+</html>
+
